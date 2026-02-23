@@ -38,7 +38,6 @@ function htmls() {
         if [ -d "$sel_path" ]; then
             current_dir="$sel_path"
         elif [ -f "$sel_path" ]; then
-            # Open HTML with default browser
             xdg-open "$sel_path"
         else
             echo "Invalid selection."

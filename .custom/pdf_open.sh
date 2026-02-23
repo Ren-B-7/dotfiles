@@ -38,10 +38,9 @@ function pdfs() {
         if [ -d "$sel_path" ]; then
             current_dir="$sel_path"
         elif [ -f "$sel_path" ]; then
-            kioclient5 exec "$sel_path"
+            xdg-open "$sel_path"
         else
             echo "Invalid selection."
         fi
     done
 }
-
