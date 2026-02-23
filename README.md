@@ -50,7 +50,7 @@ All files are managed as symlinks from this repository to their expected locatio
 ### 1. Clone the repo
 
 ```bash
-git clone <your-repo-url> ~/dotfiles
+git clone https://github.com/Ren-B-7/zsh-files.git ~/dotfiles
 cd ~/dotfiles
 ```
 
