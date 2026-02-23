@@ -50,26 +50,26 @@ All files are managed as symlinks from this repository to their expected locatio
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/Ren-B-7/dotfiles.git ~/dotfiles
-cd ~/dotfiles
+git clone https://github.com/Ren-B-7/dotfiles.git ~/Documents/dotfiles
+cd ~/Documents/dotfiles
 ```
 
 ### 2. Create symlinks
 
 ```bash
 # Shell config
-ln -sf ~/dotfiles/.zshrc           ~/.zshrc
-ln -sf ~/dotfiles/.bashrc          ~/.bashrc
-ln -sf ~/dotfiles/.bash_profile    ~/.bash_profile
-ln -sf ~/dotfiles/.wezterm.lua     ~/.wezterm.lua
+ln -sf ~/Documents/dotfiles/.zshrc           ~/.zshrc
+ln -sf ~/Documents/dotfiles/.bashrc          ~/.bashrc
+ln -sf ~/Documents/dotfiles/.bash_profile    ~/.bash_profile
+ln -sf ~/Documents/dotfiles/.wezterm.lua     ~/.wezterm.lua
 
 # .bash_logout (empty file — created if it doesn't exist)
-ln -sf ~/dotfiles/.bash_logout     ~/.bash_logout
+ln -sf ~/Documents/dotfiles/.bash_logout     ~/.bash_logout
 
 # Binaries
 mkdir -p ~/.local/bin
-ln -sf ~/dotfiles/.bin/FullUpgrade.py  ~/.local/bin/FullUpgrade
-chmod +x ~/dotfiles/.bin/FullUpgrade.py
+ln -sf ~/Documents/dotfiles/.bin/FullUpgrade.py  ~/.local/bin/FullUpgrade
+chmod +x ~/Documents/dotfiles/.bin/FullUpgrade.py
 ```
 
 ---
