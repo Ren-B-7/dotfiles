@@ -33,8 +33,12 @@ alias ...="cd ../.."
 alias ....="cd ../../.."
 alias .....="cd ../../../.."
 
-# trash
-alias rm="trash"
+# Always set rmf to the standard rm command
+alias rmf="/usr/bin/rm"
 
-# Custom Script
-alias FullUpgrade="FullUpgrade.py"
+# If trash exists we make rm trash, else we make it interactive
+if command -v trash >/dev/null 2>&1; then
+    alias rm="trash"
+else
+    alias rm="rm -i"
+fi
