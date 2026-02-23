@@ -64,7 +64,6 @@ ln -sf ~/dotfiles/.bash_profile    ~/.bash_profile
 ln -sf ~/dotfiles/.wezterm.lua     ~/.wezterm.lua
 
 # .bash_logout (empty file — created if it doesn't exist)
-touch ~/dotfiles/.bash_logout
 ln -sf ~/dotfiles/.bash_logout     ~/.bash_logout
 
 # Binaries
