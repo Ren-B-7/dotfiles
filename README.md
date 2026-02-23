@@ -17,7 +17,10 @@ All files are managed as symlinks from this repository to their expected locatio
 ├── .wezterm.lua           → ~/.wezterm.lua
 │
 ├── .bin/
-│   └── FullUpgrade.py     → ~/.local/bin/FullUpgrade
+│   ├── FullUpgrade.py     → ~/.local/bin/FullUpgrade.py
+│   ├── nvims              → ~/.local/bin/nvims
+│   ├── pdfs               → ~/.local/bin/pdfs
+│   └── htmls              → ~/.local/bin/htmls
 │
 ├── .crucial/              (package management & system config)
 │   ├── command_to_install.txt
@@ -31,9 +34,6 @@ All files are managed as symlinks from this repository to their expected locatio
     ├── start.sh
     ├── aliases_set.sh
     ├── exports.sh
-    ├── nvims_find.sh
-    ├── pdf_open.sh
-    ├── html_open.sh
     ├── zsh_imports_zinit.sh
     └── set_ufw/
         ├── set_ufw_permissions.sh
@@ -50,26 +50,30 @@ All files are managed as symlinks from this repository to their expected locatio
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/Ren-B-7/dotfiles.git ~/Documents/dotfiles
-cd ~/Documents/dotfiles
+git clone <your-repo-url> ~/dotfiles
+cd ~/dotfiles
 ```
 
 ### 2. Create symlinks
 
 ```bash
 # Shell config
-ln -sf ~/Documents/dotfiles/.zshrc           ~/.zshrc
-ln -sf ~/Documents/dotfiles/.bashrc          ~/.bashrc
-ln -sf ~/Documents/dotfiles/.bash_profile    ~/.bash_profile
-ln -sf ~/Documents/dotfiles/.wezterm.lua     ~/.wezterm.lua
+ln -sf ~/dotfiles/.zshrc           ~/.zshrc
+ln -sf ~/dotfiles/.bashrc          ~/.bashrc
+ln -sf ~/dotfiles/.bash_profile    ~/.bash_profile
+ln -sf ~/dotfiles/.wezterm.lua     ~/.wezterm.lua
 
 # .bash_logout (empty file — created if it doesn't exist)
-ln -sf ~/Documents/dotfiles/.bash_logout     ~/.bash_logout
+touch ~/dotfiles/.bash_logout
+ln -sf ~/dotfiles/.bash_logout     ~/.bash_logout
 
 # Binaries
 mkdir -p ~/.local/bin
-ln -sf ~/Documents/dotfiles/.bin/FullUpgrade.py  ~/.local/bin/FullUpgrade
-chmod +x ~/Documents/dotfiles/.bin/FullUpgrade.py
+ln -sf ~/dotfiles/.bin/FullUpgrade.py  ~/.local/bin/FullUpgrade
+ln -sf ~/dotfiles/.bin/nvims           ~/.local/bin/nvims
+ln -sf ~/dotfiles/.bin/pdfs            ~/.local/bin/pdfs
+ln -sf ~/dotfiles/.bin/htmls           ~/.local/bin/htmls
+chmod +x ~/dotfiles/.bin/FullUpgrade.py ~/dotfiles/.bin/nvims ~/dotfiles/.bin/pdfs ~/dotfiles/.bin/htmls
 ```
 
 ---
@@ -93,9 +97,6 @@ Sourced at shell startup via `start.sh`. The `IMPORTS` env var is set by `.zshrc
 | `start.sh`               | Entry point — sources all other scripts in this directory                                                                                                  |
 | `exports.sh`             | Sets `PATH` (Cargo, Mason LSPs, pip), `LANG`, and starts `ssh-agent` if not running                                                                        |
 | `aliases_set.sh`         | Aliases: Neovim configs (`cvim`, `xvim`, `svim`, `tvim`), system commands, `ls`, navigation shortcuts, `trash`-aware `rm`                                  |
-| `nvims_find.sh`          | `nvims()` — fzf picker to launch Neovim with a selected config (`no-config`, `Tiny.nvim`, `Simplicity.nvim`, `Simplexity.nvim`, `Complexity.nvim`)         |
-| `pdf_open.sh`            | `pdfs()` — fzf file browser that opens PDFs with `kioclient5`                                                                                              |
-| `html_open.sh`           | `htmls()` — fzf file browser that opens HTML files with `xdg-open`                                                                                         |
 | `zsh_imports_zinit.sh`   | Installs Zinit if missing, loads plugins (autosuggestions, completions, syntax highlighting, Powerlevel10k), OMZ snippets, and configures history & zoxide |
 | `set_ufw_permissions.sh` | `ufwSet()` — fzf menu to switch UFW firewall profile (Public / Home / Work / Clear backups)                                                                |
 | `set_ufw/public.sh`      | UFW profile: SSH, HTTP, HTTPS only                                                                                                                         |
@@ -105,9 +106,12 @@ Sourced at shell startup via `start.sh`. The `IMPORTS` env var is set by `.zshrc
 
 ### `.bin/`
 
-| File             | Symlink target                | Description                                        |
-| ---------------- | ----------------------------- | -------------------------------------------------- |
-| `FullUpgrade.py` | `~/.local/bin/FullUpgrade   ` | Interactive full system upgrade script (see below) |
+| File             | Symlink target                | Description                                            |
+| ---------------- | ----------------------------- | ------------------------------------------------------ |
+| `FullUpgrade.py` | `~/.local/bin/FullUpgrade.py` | Interactive full system upgrade script (see below)     |
+| `nvims`          | `~/.local/bin/nvims`          | fzf picker to launch Neovim with a selected config     |
+| `pdfs`           | `~/.local/bin/pdfs`           | fzf file browser that opens PDFs with `xdg-open`       |
+| `htmls`          | `~/.local/bin/htmls`          | fzf file browser that opens HTML files with `xdg-open` |
 
 Also available as the `FullUpgrade` alias.
 
@@ -179,7 +183,6 @@ The following tools must be installed for full functionality:
 - `trash-cli` — safe `rm` replacement
 - `zinit` — installed automatically by `zsh_imports_zinit.sh` on first shell launch
 - `rankmirrors` (`pacman-contrib`) — used by `FullUpgrade.py`
-- `xdg-open` — used by `pdfs() and htmls()` to open PDFs and htmls accordingly
 
 ---
 
