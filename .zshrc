@@ -12,6 +12,6 @@ REL_DIR=$(dirname "$SCRIPT_PATH")
 IMPORTS="$REL_DIR/.custom"
 
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
+export IMPORTS
 source "$IMPORTS/zsh_imports_zinit.sh"
 source "$IMPORTS/start.sh"

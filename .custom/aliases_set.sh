@@ -25,6 +25,7 @@ alias c="clear"
 alias f="fastfetch"
 alias e="exit"
 alias b="btop"
+alias a="cava"
 
 # cd
 alias ..="cd .."
@@ -34,3 +35,6 @@ alias .....="cd ../../../.."
 
 # trash
 alias rm="trash"
+
+# Custom Script
+alias FullUpgrade="FullUpgrade.py"

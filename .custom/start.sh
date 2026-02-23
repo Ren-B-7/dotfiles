@@ -1,10 +1,10 @@
-#!/bin/bash
-SCRIPT_DIR="$HOME/.custom_shell_scripts"
+# No need to recalculate paths here since IMPORTS is exported from .zshrc/.bashrc
+# We use the variable directly.
 
-# source "$SCRIPT_DIR/FullUpgrade.sh"
-source "$SCRIPT_DIR/nvims_find.sh"
-source "$SCRIPT_DIR/pdf_open.sh"
-source "$SCRIPT_DIR/html_open.sh"
-source "$SCRIPT_DIR/set_ufw_permissions.sh"
-source "$SCRIPT_DIR/exports.sh"
-source "$SCRIPT_DIR/aliases_set.sh"
+source "$IMPORTS/nvims_find.sh"
+source "$IMPORTS/pdf_open.sh"
+source "$IMPORTS/html_open.sh"
+source "$IMPORTS/set_ufw_permissions.sh"
+source "$IMPORTS/exports.sh"
+source "$IMPORTS/aliases_set.sh"
+
