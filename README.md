@@ -12,12 +12,12 @@ All files are managed as symlinks from this repository to their expected locatio
 .
 ├── .bash_profile          → ~/.bash_profile
 ├── .bashrc                → ~/.bashrc
-├── .bash_logout           → ~/.bash_logout        (empty, created on setup)
+├── .bash_logout           → ~/.bash_logout
 ├── .zshrc                 → ~/.zshrc
 ├── .wezterm.lua           → ~/.wezterm.lua
 │
 ├── .bin/
-│   └── FullUpgrade.py     → ~/.local/bin/FullUpgrade.py
+│   └── FullUpgrade.py     → ~/.local/bin/FullUpgrade
 │
 ├── .crucial/              (package management & system config)
 │   ├── command_to_install.txt
@@ -27,7 +27,7 @@ All files are managed as symlinks from this repository to their expected locatio
 │   ├── pkglist.txt
 │   └── uninstall.sh
 │
-└── .custom/               → ~/.custom_shell_scripts/
+└── .custom/               → ~/.custom/
     ├── start.sh
     ├── aliases_set.sh
     ├── exports.sh
@@ -67,12 +67,9 @@ ln -sf ~/dotfiles/.wezterm.lua     ~/.wezterm.lua
 touch ~/dotfiles/.bash_logout
 ln -sf ~/dotfiles/.bash_logout     ~/.bash_logout
 
-# Custom scripts
-ln -sf ~/dotfiles/.custom          ~/.custom_shell_scripts
-
 # Binaries
 mkdir -p ~/.local/bin
-ln -sf ~/dotfiles/.bin/FullUpgrade.py  ~/.local/bin/FullUpgrade.py
+ln -sf ~/dotfiles/.bin/FullUpgrade.py  ~/.local/bin/FullUpgrade
 chmod +x ~/dotfiles/.bin/FullUpgrade.py
 ```
 
@@ -82,7 +79,7 @@ chmod +x ~/dotfiles/.bin/FullUpgrade.py
 
 ### Shell Entry Points
 
-**`.zshrc`** — Main Zsh config. Resolves its own path so the `IMPORTS` variable always points to `.custom/` regardless of where the dotfiles are cloned. Loads Powerlevel10k instant prompt, then sources `zsh_imports_zinit.sh` and `start.sh`.
+**`.zshrc`** — Main Zsh config. Resolves its own real path via `${(%):-%x}:A`, so `IMPORTS` always points to `.custom/` relative to where the dotfiles repo lives — no hardcoded paths needed. Loads Powerlevel10k instant prompt, then sources `zsh_imports_zinit.sh` and `start.sh`.
 
 **`.bashrc` / `.bash_profile`** — Bash equivalents. `.bash_profile` sources `.bashrc` for login shells.
 
@@ -90,28 +87,28 @@ chmod +x ~/dotfiles/.bin/FullUpgrade.py
 
 ### `.custom/` — Shell Scripts
 
-Sourced at shell startup via `start.sh`. The `IMPORTS` env var points to this directory.
+Sourced at shell startup via `start.sh`. The `IMPORTS` env var is set by `.zshrc`/`.bashrc` to point to this directory automatically — resolved from the symlink's real path, so no manual configuration is needed.
 
-| File | Description |
-|---|---|
-| `start.sh` | Entry point — sources all other scripts in this directory |
-| `exports.sh` | Sets `PATH` (Cargo, Mason LSPs, pip), `LANG`, and starts `ssh-agent` if not running |
-| `aliases_set.sh` | Aliases: Neovim configs (`cvim`, `xvim`, `svim`, `tvim`), system commands, `ls`, navigation shortcuts, `trash`-aware `rm` |
-| `nvims_find.sh` | `nvims()` — fzf picker to launch Neovim with a selected config (`no-config`, `Tiny.nvim`, `Simplicity.nvim`, `Simplexity.nvim`, `Complexity.nvim`) |
-| `pdf_open.sh` | `pdfs()` — fzf file browser that opens PDFs with `kioclient5` |
-| `html_open.sh` | `htmls()` — fzf file browser that opens HTML files with `xdg-open` |
-| `zsh_imports_zinit.sh` | Installs Zinit if missing, loads plugins (autosuggestions, completions, syntax highlighting, Powerlevel10k), OMZ snippets, and configures history & zoxide |
-| `set_ufw_permissions.sh` | `ufwSet()` — fzf menu to switch UFW firewall profile (Public / Home / Work / Clear backups) |
-| `set_ufw/public.sh` | UFW profile: SSH, HTTP, HTTPS only |
-| `set_ufw/home.sh` | UFW profile: local network access + MySQL, web servers, VNC |
-| `set_ufw/work.sh` | UFW profile: SSH, HTTP/S, dev servers, MySQL, PostgreSQL, VNC, Flask |
-| `set_ufw/clear.sh` | Removes UFW backup rule files from `/etc/ufw/` |
+| File                     | Description                                                                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `start.sh`               | Entry point — sources all other scripts in this directory                                                                                                  |
+| `exports.sh`             | Sets `PATH` (Cargo, Mason LSPs, pip), `LANG`, and starts `ssh-agent` if not running                                                                        |
+| `aliases_set.sh`         | Aliases: Neovim configs (`cvim`, `xvim`, `svim`, `tvim`), system commands, `ls`, navigation shortcuts, `trash`-aware `rm`                                  |
+| `nvims_find.sh`          | `nvims()` — fzf picker to launch Neovim with a selected config (`no-config`, `Tiny.nvim`, `Simplicity.nvim`, `Simplexity.nvim`, `Complexity.nvim`)         |
+| `pdf_open.sh`            | `pdfs()` — fzf file browser that opens PDFs with `kioclient5`                                                                                              |
+| `html_open.sh`           | `htmls()` — fzf file browser that opens HTML files with `xdg-open`                                                                                         |
+| `zsh_imports_zinit.sh`   | Installs Zinit if missing, loads plugins (autosuggestions, completions, syntax highlighting, Powerlevel10k), OMZ snippets, and configures history & zoxide |
+| `set_ufw_permissions.sh` | `ufwSet()` — fzf menu to switch UFW firewall profile (Public / Home / Work / Clear backups)                                                                |
+| `set_ufw/public.sh`      | UFW profile: SSH, HTTP, HTTPS only                                                                                                                         |
+| `set_ufw/home.sh`        | UFW profile: local network access + MySQL, web servers, VNC                                                                                                |
+| `set_ufw/work.sh`        | UFW profile: SSH, HTTP/S, dev servers, MySQL, PostgreSQL, VNC, Flask                                                                                       |
+| `set_ufw/clear.sh`       | Removes UFW backup rule files from `/etc/ufw/`                                                                                                             |
 
 ### `.bin/`
 
-| File | Symlink target | Description |
-|---|---|---|
-| `FullUpgrade.py` | `~/.local/bin/FullUpgrade.py` | Interactive full system upgrade script (see below) |
+| File             | Symlink target                | Description                                        |
+| ---------------- | ----------------------------- | -------------------------------------------------- |
+| `FullUpgrade.py` | `~/.local/bin/FullUpgrade   ` | Interactive full system upgrade script (see below) |
 
 Also available as the `FullUpgrade` alias.
 
@@ -134,14 +131,14 @@ Each step is interactive with yes/no prompts and can be skipped.
 
 Not symlinked anywhere — kept as reference and used manually.
 
-| File | Description |
-|---|---|
-| `pkglist.txt` | Full list of installed pacman packages (used with `command_to_install.txt`) |
-| `Explicit_pkg.list` | Explicitly installed packages only (not pulled in as dependencies) |
-| `command_to_install.txt` | Commands to reproduce the full package set on a fresh install |
-| `pacman.conf` | Snapshot of `/etc/pacman.conf` (includes Chaotic-AUR) |
-| `uninstall.sh` | Removes any installed package not present in a given whitelist file — useful for cleaning up after restoring from `pkglist.txt` |
-| `missing.sh` | Checks for packages in the list that are not currently installed |
+| File                     | Description                                                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `pkglist.txt`            | Full list of installed pacman packages (used with `command_to_install.txt`)                                                     |
+| `Explicit_pkg.list`      | Explicitly installed packages only (not pulled in as dependencies)                                                              |
+| `command_to_install.txt` | Commands to reproduce the full package set on a fresh install                                                                   |
+| `pacman.conf`            | Snapshot of `/etc/pacman.conf` (includes Chaotic-AUR)                                                                           |
+| `uninstall.sh`           | Removes any installed package not present in a given whitelist file — useful for cleaning up after restoring from `pkglist.txt` |
+| `missing.sh`             | Checks for packages in the list that are not currently installed                                                                |
 
 #### Restoring packages on a fresh install
 
@@ -183,7 +180,7 @@ The following tools must be installed for full functionality:
 - `trash-cli` — safe `rm` replacement
 - `zinit` — installed automatically by `zsh_imports_zinit.sh` on first shell launch
 - `rankmirrors` (`pacman-contrib`) — used by `FullUpgrade.py`
-- `kioclient5` (`kio`) — used by `pdfs()` to open PDFs
+- `xdg-open` — used by `pdfs() and htmls()` to open PDFs and htmls accordingly
 
 ---
 
@@ -191,11 +188,11 @@ The following tools must be installed for full functionality:
 
 Four Neovim configurations are supported, selected via `nvims` or launched directly with an alias:
 
-| Alias | Config name | Description |
-|---|---|---|
-| `tvim` | `Tiny.nvim` | Minimal |
-| `svim` | `Simplicity.nvim` | Light |
+| Alias  | Config name       | Description                             |
+| ------ | ----------------- | --------------------------------------- |
+| `tvim` | `Tiny.nvim`       | Minimal                                 |
+| `svim` | `Simplicity.nvim` | Light                                   |
 | `xvim` | `Simplexity.nvim` | Balanced (Mason LSPs sourced from here) |
-| `cvim` | `Complexity.nvim` | Full-featured |
+| `cvim` | `Complexity.nvim` | Full-featured                           |
 
 Each config lives in `~/.config/<ConfigName>/` per the `NVIM_APPNAME` convention.
