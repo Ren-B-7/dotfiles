@@ -1,2 +1,1 @@
-sudo pacman -S --needed - < pkglist.list
-flatpak install -y < flatpaklist.list
+sudo pacman -S --needed - < pkg.list
