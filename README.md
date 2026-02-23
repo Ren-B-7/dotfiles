@@ -17,17 +17,18 @@ All files are managed as symlinks from this repository to their expected locatio
 ├── .wezterm.lua           → ~/.wezterm.lua
 │
 ├── .bin/
-│   ├── FullUpgrade.py     → ~/.local/bin/FullUpgrade.py
-│   ├── nvims              → ~/.local/bin/nvims
-│   ├── pdfs               → ~/.local/bin/pdfs
-│   └── htmls              → ~/.local/bin/htmls
+│   ├── FullUpgrade.py      → ~/.local/bin/FullUpgrade
+│   ├── nvims.sh            → ~/.local/bin/nvims
+│   ├── pdfs.sh             → ~/.local/bin/pdfs
+│   └── htmls.sh            → ~/.local/bin/htmls
 │
 ├── .crucial/              (package management & system config)
 │   ├── command_to_install.txt
 │   ├── Explicit_pkg.list
 │   ├── missing.sh
+│   ├── nerdfont_install.sh
 │   ├── pacman.conf
-│   ├── pkglist.txt
+│   ├── pkg.list
 │   └── uninstall.sh
 │
 └── .custom/               → ~/.custom/
@@ -50,30 +51,27 @@ All files are managed as symlinks from this repository to their expected locatio
 ### 1. Clone the repo
 
 ```bash
-git clone <your-repo-url> ~/dotfiles
-cd ~/dotfiles
+git clone https://github.com/Ren-B-7/dotfiles.git ~/dotfiles
+cd ~/Documents/dotfiles
 ```
 
 ### 2. Create symlinks
 
 ```bash
 # Shell config
-ln -sf ~/dotfiles/.zshrc           ~/.zshrc
-ln -sf ~/dotfiles/.bashrc          ~/.bashrc
-ln -sf ~/dotfiles/.bash_profile    ~/.bash_profile
-ln -sf ~/dotfiles/.wezterm.lua     ~/.wezterm.lua
-
-# .bash_logout (empty file — created if it doesn't exist)
-touch ~/dotfiles/.bash_logout
-ln -sf ~/dotfiles/.bash_logout     ~/.bash_logout
+ln -sf ~/Documents/dotfiles/.zshrc           ~/.zshrc
+ln -sf ~/Documents/dotfiles/.bashrc          ~/.bashrc
+ln -sf ~/Documents/dotfiles/.bash_profile    ~/.bash_profile
+ln -sf ~/Documents/dotfiles/.wezterm.lua     ~/.wezterm.lua
+ln -sf ~/Documents/dotfiles/.bash_logout     ~/.bash_logout
 
 # Binaries
 mkdir -p ~/.local/bin
-ln -sf ~/dotfiles/.bin/FullUpgrade.py  ~/.local/bin/FullUpgrade
-ln -sf ~/dotfiles/.bin/nvims           ~/.local/bin/nvims
-ln -sf ~/dotfiles/.bin/pdfs            ~/.local/bin/pdfs
-ln -sf ~/dotfiles/.bin/htmls           ~/.local/bin/htmls
-chmod +x ~/dotfiles/.bin/FullUpgrade.py ~/dotfiles/.bin/nvims ~/dotfiles/.bin/pdfs ~/dotfiles/.bin/htmls
+ln -sf ~/Documents/dotfiles/.bin/FullUpgrade.py     ~/.local/bin/FullUpgrade
+ln -sf ~/Documents/dotfiles/.bin/nvims.sh           ~/.local/bin/nvims
+ln -sf ~/Documents/dotfiles/.bin/pdfs.sh            ~/.local/bin/pdfs
+ln -sf ~/Documents/dotfiles/.bin/htmls.sh           ~/.local/bin/htmls
+chmod +x ~/Documents/dotfiles/.bin/FullUpgrade.py ~/Documents/dotfiles/.bin/nvims.sh ~/Documents/dotfiles/.bin/pdfs.sh ~/Documents/dotfiles/.bin/htmls.sh
 ```
 
 ---
@@ -106,12 +104,12 @@ Sourced at shell startup via `start.sh`. The `IMPORTS` env var is set by `.zshrc
 
 ### `.bin/`
 
-| File             | Symlink target                | Description                                            |
-| ---------------- | ----------------------------- | ------------------------------------------------------ |
-| `FullUpgrade.py` | `~/.local/bin/FullUpgrade.py` | Interactive full system upgrade script (see below)     |
-| `nvims`          | `~/.local/bin/nvims`          | fzf picker to launch Neovim with a selected config     |
-| `pdfs`           | `~/.local/bin/pdfs`           | fzf file browser that opens PDFs with `xdg-open`       |
-| `htmls`          | `~/.local/bin/htmls`          | fzf file browser that opens HTML files with `xdg-open` |
+| File             | Symlink target             | Description                                            |
+| ---------------- | -------------------------- | ------------------------------------------------------ |
+| `FullUpgrade.py` | `~/.local/bin/FullUpgrade` | Interactive full system upgrade script (see below)     |
+| `nvims`          | `~/.local/bin/nvims`       | fzf picker to launch Neovim with a selected config     |
+| `pdfs`           | `~/.local/bin/pdfs`        | fzf file browser that opens PDFs with `xdg-open`       |
+| `htmls`          | `~/.local/bin/htmls`       | fzf file browser that opens HTML files with `xdg-open` |
 
 Also available as the `FullUpgrade` alias.
 
@@ -134,25 +132,32 @@ Each step is interactive with yes/no prompts and can be skipped.
 
 Not symlinked anywhere — kept as reference and used manually.
 
-| File                     | Description                                                                                                                     |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `pkglist.txt`            | Full list of installed pacman packages (used with `command_to_install.txt`)                                                     |
-| `Explicit_pkg.list`      | Explicitly installed packages only (not pulled in as dependencies)                                                              |
-| `command_to_install.txt` | Commands to reproduce the full package set on a fresh install                                                                   |
-| `pacman.conf`            | Snapshot of `/etc/pacman.conf` (includes Chaotic-AUR)                                                                           |
-| `uninstall.sh`           | Removes any installed package not present in a given whitelist file — useful for cleaning up after restoring from `pkglist.txt` |
-| `missing.sh`             | Checks for packages in the list that are not currently installed                                                                |
+| File                     | Description                                                                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pkglist.list`           | Full list of all installed pacman packages                                                                                                         |
+| `Explicit_pkg.list`      | Explicitly installed packages only (not pulled in as dependencies)                                                                                 |
+| `command_to_install.txt` | Commands to reproduce the full package set on a fresh install                                                                                      |
+| `pacman.conf`            | Snapshot of `/etc/pacman.conf` (includes Chaotic-AUR)                                                                                              |
+| `uninstall.sh`           | Removes any installed package not present in a given whitelist file — useful for cleaning up after restoring from `pkglist.list`                   |
+| `missing.sh`             | Compares two lists and prints packages from the first that are absent in the second                                                                |
+| `nerdfont_install.sh`    | Clones the Nerd Fonts repo with sparse checkout, installs all patched fonts to `~/.local/share/fonts`, then cleans up and refreshes the font cache |
 
 #### Restoring packages on a fresh install
 
 ```bash
-sudo pacman -S --needed - < .crucial/pkglist.txt
+sudo pacman -S --needed - < .crucial/pkg.list
 ```
 
 #### Removing unlisted packages
 
 ```bash
-./.crucial/uninstall.sh .crucial/pkglist.txt
+./.crucial/uninstall.sh .crucial/pkglist.list
+```
+
+#### Checking for missing packages
+
+```bash
+./.crucial/missing.sh .crucial/Explicit_pkg.list <(pacman -Qqe)
 ```
 
 ### `.wezterm.lua`

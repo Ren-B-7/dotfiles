@@ -1,166 +1,166 @@
-alsa-firmware 1.2.4-4
-alsa-plugins 1:1.2.12-5
-alsa-utils 1.2.15.2-2
-apparmor 4.1.6-1
-archlinux-keyring 20260206-1
-ark 25.12.2-1
-b43-fwcutter 019-6
-base 3-3
-base-devel 1-2
-bash-completion 2.17.0-3
-bind 9.20.19-1
-bluedevil 1:6.6.0-1
-bluez 5.86-2
-bluez-utils 5.86-2
-bolt 0.9.10-1
-btop 1.4.6-1
-btrfs-assistant 2.2-4
-btrfs-progs 6.19-1
-cantarell-fonts 1:0.311-1
-cava 0.10.7-1
-chaotic-keyring 20251028-1
-chaotic-mirrorlist 20260214-1
-cider 3.1.8-1
-cmake 4.2.3-1
-cryptsetup 2.8.4-1
-device-mapper 2.03.38-1
-diffutils 3.12-2
-dmidecode 3.7-1
-docker 1:29.2.1-1
-dolphin 25.12.2-1
-dosfstools 4.2-5
-downgrade 11.8.0-1
-dracut 110-1
-e2fsprogs 1.47.3-2
-efibootmgr 18-3
-endeavouros-branding 25.11.1.1-1
-endeavouros-keyring 20231222-1
-endeavouros-mirrorlist 26-1
-eos-hooks 1.16.2-1
-eos-rankmirrors 26-1
-eos-settings-plasma 2.0-1
-exfatprogs 1.3.1-1
-fakeroot 1.37.2-1
-fastfetch 2.59.0-1
-filelight 25.12.2-1
-firewalld 2.4.0-6
-flatpak 1:1.16.3-1
-freetype2 2.14.1-2
-fwupd 2.0.19-1
-git 2.53.0-1
-gpm 1.20.7.r38.ge82d1a6-6
-gptfdisk 1.0.10-2
-gwenview 25.12.2-1
-hwdetect 2025.08.16.1333-1
-hwinfo 25.2-1
-inetutils 2.7-2
-intel-ucode 20260210-1
-inxi 3.3.40.1-1
-iptables-nft 1:1.8.11-2
-isoimagewriter 25.12.2-1
-iwd 3.11-2
-kcalc 25.12.2-1
-kde-cli-tools 6.6.0-1
-kimageformats 6.23.0-1
-kinfocenter 6.6.0-1
-kio-admin 25.12.2-1
-kio-extras 25.12.2-1
-kio-fuse 5.1.1-1
-konsole 25.12.2-1
-kscreen 6.6.0-1
-kwallet-pam 6.6.0-1
-kwalletmanager 25.12.2-1
-lazygit 0.59.0-1
-less 1:692-1
-libgsf 1.14.55-1
-libopenraw 0.3.7-2
-linux 6.18.9.arch1-2
-linux-firmware-cirrus 20260110-1
-linux-firmware-intel 20260110-1
-linux-firmware-other 20260110-1
-linux-firmware-realtek 20260110-1
-linux-firmware-whence 20260110-1
-linux-headers 6.18.9.arch1-2
-logrotate 3.22.0-1
-lsb-release 2.0.r55.a25a4fc-1
-lsscsi 0.32-2
-luarocks 3.13.0-1
-lvm2 2.03.38-1
-man-db 2.13.1-1
-man-pages 6.17-1
-mdadm 4.4-2
-mesa 1:25.3.5-1
-mesa-utils 9.0.0-7
-modemmanager 1.24.2-1
-neovim 0.11.6-1
-networkmanager 1.54.3-1
-noto-fonts 1:2026.02.01-1
-noto-fonts-cjk 20240730-1
-noto-fonts-emoji 1:2.051-1
-noto-fonts-extra 1:2026.02.01-1
-npm 11.10.1-1
-nss-mdns 0.15.1-2
-ntp 4.2.8.p18-6
-openssh 10.2p1-2
-pacman-contrib 1.13.1-1
-partitionmanager 25.12.2-1
-perl 5.42.0-1
-pipewire-alsa 1:1.4.10-2
-pipewire-jack 1:1.4.10-2
-pipewire-pulse 1:1.4.10-2
-plasma-applets-weather-widget-3 3.0.4-2
-plasma-desktop 6.6.0-1
-plasma-login-manager 6.6.0-1
-plasma-nm 6.6.0-1
-plasma-pa 6.6.0-1
-plasma-wayland-protocols 1.20.0-1
-plasma-workspace 6.6.0-1
-playerctl 2.4.1-5
-power-profiles-daemon 0.30-1
-powerdevil 6.6.0-1
-ppp 2.5.2-1
-prismlauncher 10.0.5-1
-python-capng 0.9-1
-python-packaging 26.0-1
-python-pip 26.0.1-1
-python-setuptools 1:82.0.0-1
-rebuild-detector 4.4.5-1
-rsync 3.4.1-2
-rtkit 0.14-1
-rustup 1.28.2-4
-smartmontools 7.5-1
-snap-pac 3.0.1-3
-snapper 0.13.0-2
-sof-firmware 2025.12.2-1
-spectacle 1:6.6.0-1
-sudo 1.9.17.p2-2
-sysfsutils 2.1.1-2
-systemd-sysvcompat 259.1-1
-texinfo 7.2-1
-trash-cli 0.24.5.26-3
-tree 2.3.1-1
-ttf-bitstream-vera 1.10-16
-ttf-dejavu 2.37+18+g9b5d1b2f-7
-ttf-liberation 2.1.5-2
-ufw 0.36.2-7
-unrar 1:7.2.4-1
-unzip 6.0-23
-usb_modeswitch 2.6.2.20251207-1
-usbutils 019-1
-vulkan-intel 1:25.3.5-1
-wezterm 20240203.110809.5046fc22-2
-which 2.23-1
-wireplumber 0.5.13-1
-wl-clipboard 1:2.2.1-3
-wpa_supplicant 2:2.11-5
-xdg-desktop-portal-kde 6.6.0-1
-xdg-user-dirs 0.19-2
-xdg-utils 1.2.1-2
-xf86-input-libinput 1.5.0-1
-xl2tpd 1.3.19-1
-xorg-xdpyinfo 1.4.0-1
-xz 5.8.2-1
-yay 12.5.7-1
-zip 3.0-11
-zoxide 0.9.9-2
-zsh 5.9-5
+alsa-firmware
+alsa-plugins
+alsa-utils
+apparmor
+archlinux-keyring
+ark
+b43-fwcutter
+base
+base-devel
+bash-completion
+bind
+bluedevil
+bluez
+bluez-utils
+bolt
+btop
+btrfs-assistant
+btrfs-progs
+cantarell-fonts
+cava
+chaotic-keyring
+chaotic-mirrorlist
+cider
+cmake
+cryptsetup
+device-mapper
+diffutils
+dmidecode
+docker
+dolphin
+dosfstools
+downgrade
+dracut
+e2fsprogs
+efibootmgr
+endeavouros-branding
+endeavouros-keyring
+endeavouros-mirrorlist
+eos-hooks
+eos-rankmirrors
+eos-settings-plasma
+exfatprogs
+fakeroot
+fastfetch
+filelight
+firewalld
+flatpak
+freetype2
+fwupd
+git
+gpm
+gptfdisk
+gwenview
+hwdetect
+hwinfo
+inetutils
+intel-ucode
+inxi
+iptables-nft
+isoimagewriter
+iwd
+kcalc
+kde-cli-tools
+kimageformats
+kinfocenter
+kio-admin
+kio-extras
+kio-fuse
+konsole
+kscreen
+kwallet-pam
+kwalletmanager
+lazygit
+less
+libgsf
+libopenraw
+linux
+linux-firmware-cirrus
+linux-firmware-intel
+linux-firmware-other
+linux-firmware-realtek
+linux-firmware-whence
+linux-headers
+logrotate
+lsb-release
+lsscsi
+luarocks
+lvm2
+man-db
+man-pages
+mdadm
+mesa
+mesa-utils
+modemmanager
+neovim
+networkmanager
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+noto-fonts-extra
+npm
+nss-mdns
+ntp
+openssh
+pacman-contrib
+partitionmanager
+perl
+pipewire-alsa
+pipewire-jack
+pipewire-pulse
+plasma-applets-weather-widget-3
+plasma-desktop
+plasma-login-manager
+plasma-nm
+plasma-pa
+plasma-wayland-protocols
+plasma-workspace
+playerctl
+power-profiles-daemon
+powerdevil
+ppp
+prismlauncher
+python-capng
+python-packaging
+python-pip
+python-setuptools
+rebuild-detector
+rsync
+rtkit
+rustup
+smartmontools
+snap-pac
+snapper
+sof-firmware
+spectacle
+sudo
+sysfsutils
+systemd-sysvcompat
+texinfo
+trash-cli
+tree
+ttf-bitstream-vera
+ttf-dejavu
+ttf-liberation
+ufw
+unrar
+unzip
+usb_modeswitch
+usbutils
+vulkan-intel
+wezterm
+which
+wireplumber
+wl-clipboard
+wpa_supplicant
+xdg-desktop-portal-kde
+xdg-user-dirs
+xdg-utils
+xf86-input-libinput
+xl2tpd
+xorg-xdpyinfo
+xz
+yay
+zip
+zoxide
+zsh
