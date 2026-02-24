@@ -6,8 +6,6 @@ alias xvim="NVIM_APPNAME=Simplexity.nvim nvim"
 alias svim="NVIM_APPNAME=Simplicity.nvim nvim"
 alias tvim="NVIM_APPNAME=Tiny.nvim nvim"
 
-alias FullUpgrade="~/.custom_shell_scripts/FullUpgrade.py"
-
 #systems
 alias rebt="systemctl reboot"
 alias shut="systemctl poweroff"
