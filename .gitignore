@@ -247,3 +247,5 @@ zsdoc/data
 .bash_history
 .venv
 .env
+
+.zhistory

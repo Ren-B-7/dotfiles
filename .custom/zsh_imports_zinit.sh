@@ -34,7 +34,7 @@ zinit ice wait lucid
 zinit snippet OMZP::archlinux
 
 # History setup
-HISTFILE="$HOME/.custom_shell_scripts/.zhistory"
+HISTFILE="$IMPORTS/.zhistory"
 SAVEHIST=500
 HISTSIZE=500
 setopt share_history
