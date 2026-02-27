@@ -67,11 +67,11 @@ ln -sf ~/Documents/dotfiles/.bash_logout     ~/.bash_logout
 
 # Binaries
 mkdir -p ~/.local/bin
-ln -sf ~/Documents/dotfiles/.bin/FullUpgrade.py     ~/.local/bin/FullUpgrade
+ln -sf ~/Documents/dotfiles/.bin/FullUpgrade.sh     ~/.local/bin/FullUpgrade
 ln -sf ~/Documents/dotfiles/.bin/nvims.sh           ~/.local/bin/nvims
 ln -sf ~/Documents/dotfiles/.bin/pdfs.sh            ~/.local/bin/pdfs
 ln -sf ~/Documents/dotfiles/.bin/htmls.sh           ~/.local/bin/htmls
-chmod +x ~/Documents/dotfiles/.bin/FullUpgrade.py ~/Documents/dotfiles/.bin/nvims.sh ~/Documents/dotfiles/.bin/pdfs.sh ~/Documents/dotfiles/.bin/htmls.sh
+chmod +x ~/Documents/dotfiles/.bin/FullUpgrade.sh ~/Documents/dotfiles/.bin/nvims.sh ~/Documents/dotfiles/.bin/pdfs.sh ~/Documents/dotfiles/.bin/htmls.sh
 ```
 
 ---
@@ -106,7 +106,7 @@ Sourced at shell startup via `start.sh`. The `IMPORTS` env var is set by `.zshrc
 
 | File             | Symlink target             | Description                                            |
 | ---------------- | -------------------------- | ------------------------------------------------------ |
-| `FullUpgrade.py` | `~/.local/bin/FullUpgrade` | Interactive full system upgrade script (see below)     |
+| `FullUpgrade`    | `~/.local/bin/FullUpgrade` | Interactive full system upgrade script (see below)     |
 | `nvims`          | `~/.local/bin/nvims`       | fzf picker to launch Neovim with a selected config     |
 | `pdfs`           | `~/.local/bin/pdfs`        | fzf file browser that opens PDFs with `xdg-open`       |
 | `htmls`          | `~/.local/bin/htmls`       | fzf file browser that opens HTML files with `xdg-open` |
