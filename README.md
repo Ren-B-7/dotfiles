@@ -59,19 +59,19 @@ cd ~/Documents/dotfiles
 
 ```bash
 # Shell config
-ln -sf ~/Documents/dotfiles/.zshrc           ~/.zshrc
-ln -sf ~/Documents/dotfiles/.bashrc          ~/.bashrc
-ln -sf ~/Documents/dotfiles/.bash_profile    ~/.bash_profile
-ln -sf ~/Documents/dotfiles/.wezterm.lua     ~/.wezterm.lua
-ln -sf ~/Documents/dotfiles/.bash_logout     ~/.bash_logout
+ln -s ~/Documents/dotfiles/.zshrc           ~/.zshrc
+ln -s ~/Documents/dotfiles/.bashrc          ~/.bashrc
+ln -s ~/Documents/dotfiles/.bash_profile    ~/.bash_profile
+ln -s ~/Documents/dotfiles/.wezterm.lua     ~/.wezterm.lua
+ln -s ~/Documents/dotfiles/.bash_logout     ~/.bash_logout
 
 # Binaries
 mkdir -p ~/.local/bin
-ln -sf ~/Documents/dotfiles/.bin/FullUpgrade.py     ~/.local/bin/FullUpgrade
-ln -sf ~/Documents/dotfiles/.bin/nvims.sh           ~/.local/bin/nvims
-ln -sf ~/Documents/dotfiles/.bin/pdfs.sh            ~/.local/bin/pdfs
-ln -sf ~/Documents/dotfiles/.bin/htmls.sh           ~/.local/bin/htmls
-chmod +x ~/Documents/dotfiles/.bin/FullUpgrade.py ~/Documents/dotfiles/.bin/nvims.sh ~/Documents/dotfiles/.bin/pdfs.sh ~/Documents/dotfiles/.bin/htmls.sh
+ln -s ~/Documents/dotfiles/.bin/FullUpgrade.sh     ~/.local/bin/FullUpgrade
+ln -s ~/Documents/dotfiles/.bin/nvims.sh           ~/.local/bin/nvims
+ln -s ~/Documents/dotfiles/.bin/pdfs.sh            ~/.local/bin/pdfs
+ln -s ~/Documents/dotfiles/.bin/htmls.sh           ~/.local/bin/htmls
+chmod +x ~/Documents/dotfiles/.bin/FullUpgrade.sh ~/Documents/dotfiles/.bin/nvims.sh ~/Documents/dotfiles/.bin/pdfs.sh ~/Documents/dotfiles/.bin/htmls.sh
 ```
 
 ---
@@ -106,7 +106,7 @@ Sourced at shell startup via `start.sh`. The `IMPORTS` env var is set by `.zshrc
 
 | File             | Symlink target             | Description                                            |
 | ---------------- | -------------------------- | ------------------------------------------------------ |
-| `FullUpgrade.py` | `~/.local/bin/FullUpgrade` | Interactive full system upgrade script (see below)     |
+| `FullUpgrade`    | `~/.local/bin/FullUpgrade` | Interactive full system upgrade script (see below)     |
 | `nvims`          | `~/.local/bin/nvims`       | fzf picker to launch Neovim with a selected config     |
 | `pdfs`           | `~/.local/bin/pdfs`        | fzf file browser that opens PDFs with `xdg-open`       |
 | `htmls`          | `~/.local/bin/htmls`       | fzf file browser that opens HTML files with `xdg-open` |
