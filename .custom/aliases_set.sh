@@ -40,3 +40,9 @@ if command -v trash >/dev/null 2>&1; then
 else
     alias rm="rm -i"
 fi
+
+if command -v yazi >/dev/null 2>&1; then
+    alias y="yazi"
+fi
+
+
