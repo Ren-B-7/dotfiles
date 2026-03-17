@@ -522,7 +522,7 @@ main() {
         logs_journalctl
     fi
 
-    if command -v zinit &>/dev/null; then
+    if command -v zsh&>/dev/null; then
         update_shell
     fi
 
