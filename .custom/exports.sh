@@ -7,6 +7,9 @@ export PATH="$CARGOINSTALLPATH:$PATH"
 
 export MASON_INSTALLED_LSPS="$HOME/.local/share/Simplexity.nvim/mason/bin/"
 export PATH="$MASON_INSTALLED_LSPS:$PATH"
+# Need to add lsps to python paths, since some are seen as python modules
+# (beautysh / basedpyright)
+export PYTHONPATH="$MASON_INSTALLED_LSPS:$PYTHONPATH"
 
 export PIPBIN="$HOME/.local/bin/"
 export PATH="$PIPBIN:$PATH"
