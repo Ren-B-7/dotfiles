@@ -231,7 +231,7 @@ update_pacman() {
     fi
 
     log_info "Updating pacman database..."
-    sudo pacman -Sy || true
+    sudo pacman -Syy || true
 
     log_info "Performing full system upgrade..."
     sudo pacman -Su || true
