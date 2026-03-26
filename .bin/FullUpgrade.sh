@@ -190,14 +190,9 @@ mirrorlist() {
             return 0
         fi
         rank_eos_mirrors
-    elif [[ "$distro" == "arch" ]]; then
-        if ! ask_yes_no "Rank Arch mirrors?" "N"; then
-            log_info "Mirror ranking skipped."
-            return 0
-        fi
-        rank_arch_mirrors
-    else
-        log_info "Unknown distro or mirrors not supported"
+    fi
+    if ! ask_yes_no "Rank Arch mirrors?" "N"; then
+        log_info "Mirror ranking skipped."
         return 0
     fi
 }
