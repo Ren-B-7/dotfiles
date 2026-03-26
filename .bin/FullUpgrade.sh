@@ -195,6 +195,7 @@ mirrorlist() {
         log_info "Mirror ranking skipped."
         return 0
     fi
+    rank_arch_mirrors
 }
 
 #============================================================
