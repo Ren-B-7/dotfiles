@@ -96,12 +96,13 @@ rank_arch_mirrors() {
     local orig_path="/etc/pacman.d/mirrorlist.orig"
     local pacnew_path="/etc/pacman.d/mirrorlist.pacnew"
 
-    # Cleanup old files
     sudo rm -f "$orig_path" "$pacnew_path" 2>/dev/null
 
-    local url="https://archlinux.org/mirrorlist/all/https/"
+    # Query-parameter URL — filter by country and only use_mirror_status=on mirrors
+    # ZA = South Africa, DE/NL/FR = fast European mirrors with good intercontinental links
+    local url="https://archlinux.org/mirrorlist/?country=ZA&country=DE&country=NL&country=FR&protocol=https&use_mirror_status=on"
 
-    log_info "[${name}] Downloading Arch mirrorlist…"
+    log_info "[${name}] Downloading filtered Arch mirrorlist…"
 
     local data
     data=$(curl -s -L --max-time 20 --user-agent "ArchMirrorRanker" "$url") || {
@@ -109,42 +110,41 @@ rank_arch_mirrors() {
         return 1
     }
 
-    # Extract and write servers
-    local servers=()
-    while IFS= read -r line; do
-        if [[ "$line" =~ ^#?Server ]]; then
-            servers+=("${line#\#}")
-        fi
-    done <<< "$data"
+    # The generator returns commented-out servers — uncomment them
+    local uncommented
+    uncommented=$(echo "$data" | sed -e 's/^#Server/Server/' -e '/^#/d' -e '/^$/d')
 
-    sudo tee "$orig_path" > /dev/null <<< "$(IFS=$'\n'; echo "${servers[*]}")" || {
-        log_error "Failed to write mirrorlist"
+    local mirror_count
+    mirror_count=$(echo "$uncommented" | grep -c "^Server")
+
+    if [[ "$mirror_count" -eq 0 ]]; then
+        log_error "No mirrors found in downloaded list"
         return 1
-    }
-    sudo chmod 644 "$orig_path"
-    log_info "[${name}] Downloaded ${#servers[@]} mirror URLs"
+    fi
 
-    # Check for rankmirrors
+    echo "$uncommented" | sudo tee "$orig_path" > /dev/null
+    sudo chmod 644 "$orig_path"
+    log_info "[${name}] Downloaded ${mirror_count} mirror URLs"
+
     if ! command -v rankmirrors &>/dev/null; then
         log_error "rankmirrors is not installed (pacman-contrib missing)"
         return 1
     fi
 
-    log_info "[${name}] Running rankmirrors -w -p 8-n ${num_mirrors}…"
+    log_info "[${name}] Running rankmirrors -p -w -n ${num_mirrors}…"
 
     local ranked_output
-    ranked_output=$(sudo rankmirrors -p 8 -w -n "$num_mirrors" "$orig_path" 2>/dev/null) || {
+    ranked_output=$(sudo rankmirrors -p -w -n "$num_mirrors" "$orig_path") || {
         log_error "rankmirrors failed"
         return 1
     }
 
-    # Write final ranked output
     echo "$ranked_output" | sudo tee "$pacnew_path" > /dev/null
     sudo chmod 644 "$pacnew_path"
 
-    local mirror_count
-    mirror_count=$(echo "$ranked_output" | grep -c "^Server")
-    log_info "[${name}] Ranked and saved ${mirror_count} mirrors to ${pacnew_path}"
+    local final_count
+    final_count=$(echo "$ranked_output" | grep -c "^Server")
+    log_info "[${name}] Ranked and saved ${final_count} mirrors to ${pacnew_path}"
 
     return 0
 }
