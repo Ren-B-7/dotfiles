@@ -115,12 +115,12 @@ rank_cachyos_mirrors() {
     sudo cp "$mirrorlist_path" "$orig_path"
 
     # --- Preferred method ---
-    if command -v cachyos-rankmirrors &>/dev/null; then
+    if command -v cachyos-rate-mirrors &>/dev/null; then
         log_info "[${name}] Using cachyos-rankmirrors (recommended)…"
 
         # Let it handle everything (no overrides unless needed)
-        sudo cachyos-rankmirrors || {
-            log_error "cachyos-rankmirrors failed"
+        sudo cachyos-rate-mirrors || {
+            log_error "cachyos-rate-mirrors failed"
             return 1
         }
 
@@ -129,10 +129,10 @@ rank_cachyos_mirrors() {
     fi
 
     # --- Fallback (generic Arch tool) ---
-    log_info "[${name}] cachyos-rankmirrors not found, falling back to rankmirrors…"
+    log_info "[${name}] cachyos-rate-mirrors not found, falling back to rankmirrors…"
 
     if ! command -v rankmirrors &>/dev/null; then
-        log_error "Neither cachyos-rankmirrors nor rankmirrors is installed"
+        log_error "Neither cachyos-rate-mirrors nor rankmirrors is installed"
         return 1
     fi
 
