@@ -97,185 +97,262 @@ show_disk_space() {
 # MIRROR FUNCTIONS
 #============================================================
 
-rank_cachyos_mirrors() {
-    local name="CachyOS Mirrors"
-    local num_mirrors=15
-    local mirrorlist_path="/etc/pacman.d/cachyos-mirrorlist"
-    local orig_path="/etc/pacman.d/cachyos-mirrorlist.orig"
+#!/bin/bash
+# =============================================================
+#  MIRROR RANKING SECTION
+# =============================================================
 
-    log_info "[${name}] Preparing mirrorlist…"
-
-    # Ensure mirrorlist exists
-    if [[ ! -f "$mirrorlist_path" ]]; then
-        log_error "CachyOS mirrorlist not found at $mirrorlist_path"
-        return 1
-    fi
-
-    # Backup current list
-    sudo cp "$mirrorlist_path" "$orig_path"
-
-    # --- Preferred method ---
-    if command -v cachyos-rate-mirrors &>/dev/null; then
-        log_info "[${name}] Using cachyos-rankmirrors (recommended)…"
-
-        # Let it handle everything (no overrides unless needed)
-        sudo cachyos-rate-mirrors || {
-            log_error "cachyos-rate-mirrors failed"
-            return 1
-        }
-
-        log_info "[${name}] Mirror ranking complete"
-        return 0
-    fi
-
-    # --- Fallback (generic Arch tool) ---
-    log_info "[${name}] cachyos-rate-mirrors not found, falling back to rankmirrors…"
-
-    if ! command -v rankmirrors &>/dev/null; then
-        log_error "Neither cachyos-rate-mirrors nor rankmirrors is installed"
-        return 1
-    fi
-
-    local ranked_output
-    ranked_output=$(sudo rankmirrors -p -w -n "$num_mirrors" "$orig_path") || {
-        log_error "rankmirrors failed"
-        return 1
-    }
-
-    echo "$ranked_output" | sudo tee "$mirrorlist_path" > /dev/null
-    sudo chmod 644 "$mirrorlist_path"
-
-    local final_count
-    final_count=$(echo "$ranked_output" | grep -c "^Server")
-
-    log_info "[${name}] Ranked and saved ${final_count} mirrors (fallback mode)"
-
-    return 0
-}
-
-rank_arch_mirrors() {
-    local name="Arch Mirrors"
-    local num_mirrors=15
-
-    local orig_path="/etc/pacman.d/mirrorlist.orig"
-    local pacnew_path="/etc/pacman.d/mirrorlist.pacnew"
-
-    sudo rm -f "$orig_path" "$pacnew_path" 2>/dev/null
-
-    # Query-parameter URL — filter by country and only use_mirror_status=on mirrors
-    # ZA = South Africa, DE/NL/FR = fast European mirrors with good intercontinental links
-    local url="https://archlinux.org/mirrorlist/?country=ZA&country=DE&country=NL&country=FR&protocol=https&use_mirror_status=on"
-
-    log_info "[${name}] Downloading filtered Arch mirrorlist…"
-
-    local data
-    data=$(curl -s -L --max-time 20 --user-agent "ArchMirrorRanker" "$url") || {
-        log_error "Failed to download mirrorlist"
-        return 1
-    }
-
-    # The generator returns commented-out servers — uncomment them
-    local uncommented
-    uncommented=$(echo "$data" | sed -e 's/^#Server/Server/' -e '/^#/d' -e '/^$/d')
-
-    local mirror_count
-    mirror_count=$(echo "$uncommented" | grep -c "^Server")
-
-    if [[ "$mirror_count" -eq 0 ]]; then
-        log_error "No mirrors found in downloaded list"
-        return 1
-    fi
-
-    echo "$uncommented" | sudo tee "$orig_path" > /dev/null
-    sudo chmod 644 "$orig_path"
-    log_info "[${name}] Downloaded ${mirror_count} mirror URLs"
-
-    if ! command -v rankmirrors &>/dev/null; then
-        log_error "rankmirrors is not installed (pacman-contrib missing)"
-        return 1
-    fi
-
-    log_info "[${name}] Running rankmirrors -p -w -n ${num_mirrors}…"
-
-    local ranked_output
-    ranked_output=$(sudo rankmirrors -p -w -n "$num_mirrors" "$orig_path") || {
-        log_error "rankmirrors failed"
-        return 1
-    }
-
-    echo "$ranked_output" | sudo tee "$pacnew_path" > /dev/null
-    sudo chmod 644 "$pacnew_path"
-
-    local final_count
-    final_count=$(echo "$ranked_output" | grep -c "^Server")
-    log_info "[${name}] Ranked and saved ${final_count} mirrors to ${pacnew_path}"
-
-    return 0
-}
-
-rank_eos_mirrors() {
-    local name="EndeavourOS Mirrors"
-    local num_mirrors=15
-
-    local mirrorlist_path="/etc/pacman.d/endeavouros-mirrorlist"
-    local orig_path="/etc/pacman.d/endeavouros-mirrorlist.orig"
-
-    log_info "[${name}] Preparing mirrorlist…"
-
-    # Ensure mirrorlist exists
-    if [[ ! -f "$mirrorlist_path" ]]; then
-        log_error "EndeavourOS mirrorlist not found at $mirrorlist_path"
-        return 1
-    fi
-
-    # Backup current list
-    sudo cp "$mirrorlist_path" "$orig_path"
-
-    # --- Preferred method ---
-    if command -v eos-rankmirrors &>/dev/null; then
-        log_info "[${name}] Using eos-rankmirrors (recommended)…"
-
-        sudo eos-rankmirrors || {
-            log_error "eos-rankmirrors failed"
-            return 1
-        }
-
-        log_info "[${name}] Mirror ranking complete"
-        return 0
-    fi
-
-    # --- Fallback ---
-    log_info "[${name}] eos-rankmirrors not found, falling back to rankmirrors…"
-
-    if ! command -v rankmirrors &>/dev/null; then
-        log_error "Neither eos-rankmirrors nor rankmirrors is installed"
-        return 1
-    fi
-
-    local ranked_output
-    ranked_output=$(sudo rankmirrors -p -w -n "$num_mirrors" "$orig_path") || {
-        log_error "rankmirrors failed"
-        return 1
-    }
-
-    echo "$ranked_output" | sudo tee "$mirrorlist_path" > /dev/null
-    sudo chmod 644 "$mirrorlist_path"
-
-    local final_count
-    final_count=$(echo "$ranked_output" | grep -c "^Server")
-
-    log_info "[${name}] Ranked and saved ${final_count} mirrors (fallback mode)"
-
-    return 0
-}
+readonly MIRROR_COUNT=20
+readonly MIRROR_MAX_DELAY=86400
+readonly MIRROR_CONCURRENCY=8
+readonly MIRROR_MAX_JUMPS=5
+readonly MIRROR_NEIGHBORS=3
+readonly MIRROR_PER_COUNTRY=3
+readonly MIRROR_RETEST_TOP=5
+readonly MIRROR_PROTOCOL="https"
 
 detect_distro() {
     if [[ -f /etc/os-release ]]; then
+        # shellcheck disable=SC1091
         . /etc/os-release
-        echo "$ID"
+        echo "${ID,,}"
     else
         echo "unknown"
     fi
+}
+
+# Returns "rate-mirrors-subcommand:/mirrorlist/path" or empty if unsupported
+map_distro() {
+    case "$1" in
+        endeavouros) echo "endeavouros:/etc/pacman.d/endeavouros-mirrorlist" ;;
+        cachyos)     echo "cachyos:/etc/pacman.d/cachyos-mirrorlist"         ;;
+        manjaro)     echo "manjaro:/etc/pacman.d/mirrorlist"                 ;;
+        artix)       echo "artix:/etc/pacman.d/mirrorlist"                   ;;
+        arcolinux)   echo "arcolinux:/etc/pacman.d/arcolinux-mirrorlist"     ;;
+        rebornos)    echo "rebornos:/etc/pacman.d/mirrorlist"                ;;
+        archarm)     echo "archarm:/etc/pacman.d/mirrorlist"                 ;;
+        *)           echo ""                                                  ;;
+    esac
+}
+
+_rate_mirrors_run() {
+    local label="$1" subcmd="$2" out_path="$3"
+    local tmpfile
+    tmpfile=$(mktemp) || { log_error "[${label}] mktemp failed"; return 1; }
+
+    log_info "[${label}] rate-mirrors ${subcmd} | protocol=${MIRROR_PROTOCOL} max-delay=${MIRROR_MAX_DELAY}s concurrency=${MIRROR_CONCURRENCY} max-jumps=${MIRROR_MAX_JUMPS} neighbors=${MIRROR_NEIGHBORS} per-country=${MIRROR_PER_COUNTRY} retest-top=${MIRROR_RETEST_TOP} count=${MIRROR_COUNT}"
+
+    sudo rate-mirrors \
+        --allow-root \
+        --save="$tmpfile" \
+        --disable-comments-in-file \
+        --concurrency="$MIRROR_CONCURRENCY" \
+        --max-jumps="$MIRROR_MAX_JUMPS" \
+        --protocol="$MIRROR_PROTOCOL" \
+        "$subcmd" \
+        --max-delay="$MIRROR_MAX_DELAY" \
+        --country-neighbors-per-country="$MIRROR_NEIGHBORS" \
+        --country-test-mirrors-per-country="$MIRROR_PER_COUNTRY" \
+        --top-mirrors-number-to-retest="$MIRROR_RETEST_TOP" \
+        --max-mirrors-to-output="$MIRROR_COUNT" \
+        2>&1 \
+    || {
+        log_error "[${label}] rate-mirrors failed"
+        rm -f "$tmpfile"
+        return 1
+    }
+
+    if [[ ! -s "$tmpfile" ]]; then
+        log_error "[${label}] rate-mirrors produced empty output"
+        rm -f "$tmpfile"
+        return 1
+    fi
+
+    sudo cp "$out_path" "${out_path}.orig" 2>/dev/null || true
+    sudo mv "$tmpfile" "$out_path"
+    sudo chmod 644 "$out_path"
+    log_info "[${label}] Mirrorlist written → ${out_path}"
+    return 0
+}
+
+_rankmirrors_run() {
+    local label="$1" src="$2" out_path="$3"
+
+    log_info "[${label}] Falling back to rankmirrors …"
+
+    local ranked
+    ranked=$(sudo rankmirrors -n "$MIRROR_COUNT" "$src" 2>/dev/null) || {
+        log_error "[${label}] rankmirrors failed"
+        return 1
+    }
+
+    echo "$ranked" | sudo tee "$out_path" > /dev/null
+    sudo chmod 644 "$out_path"
+    log_info "[${label}] rankmirrors complete → ${out_path}"
+    return 0
+}
+
+rank_distro_mirrors() {
+    local distro="$1"
+    local label="${distro^} Mirrors"
+
+    local mapping subcmd list_path
+    mapping=$(map_distro "$distro")
+
+    if [[ -z "$mapping" ]]; then
+        log_info "[${label}] No dedicated subcommand for '${distro}'"
+        return 0
+    fi
+
+    subcmd="${mapping%%:*}"
+    list_path="${mapping##*:}"
+
+    # Tier 1: distro-native tools
+    case "$distro" in
+        endeavouros)
+            if command -v eos-rankmirrors &>/dev/null; then
+                log_info "[${label}] Using eos-rankmirrors …"
+                sudo cp "$list_path" "${list_path}.orig" 2>/dev/null || true
+                if sudo eos-rankmirrors; then
+                    return 0
+                fi
+                log_error "[${label}] eos-rankmirrors failed – falling through"
+            fi
+            ;;
+        cachyos)
+            if command -v cachyos-rate-mirrors &>/dev/null; then
+                log_info "[${label}] Using cachyos-rate-mirrors …"
+                sudo cp "$list_path" "${list_path}.orig" 2>/dev/null || true
+                if sudo cachyos-rate-mirrors; then
+                    return 0
+                fi
+                log_error "[${label}] cachyos-rate-mirrors failed – falling through"
+            fi
+            ;;
+    esac
+
+    # Tier 2: rate-mirrors
+    if command -v rate-mirrors &>/dev/null; then
+        [[ -f "$list_path" ]] || { log_error "[${label}] Mirrorlist not found: ${list_path}"; return 1; }
+        if _rate_mirrors_run "$label" "$subcmd" "$list_path"; then
+            return 0
+        fi
+        log_error "[${label}] rate-mirrors failed – falling through"
+    else
+        log_info "[${label}] rate-mirrors not found"
+    fi
+
+    # Tier 3: rankmirrors
+    if command -v rankmirrors &>/dev/null; then
+        local orig="${list_path}.orig"
+        [[ -f "$orig" ]] || sudo cp "$list_path" "$orig" 2>/dev/null || true
+        if _rankmirrors_run "$label" "$orig" "$list_path"; then
+            return 0
+        fi
+    else
+        log_info "[${label}] rankmirrors not found"
+    fi
+
+    log_error "[${label}] All ranking methods failed – mirrorlist unchanged"
+    return 1
+}
+
+rank_arch_mirrors() {
+    local label="Arch Mirrors"
+    local list_path="/etc/pacman.d/mirrorlist"
+    local tmpfile
+
+    # Tier 1: rate-mirrors (--sort-mirrors-by=score_asc: health-filtered before speed)
+    if command -v rate-mirrors &>/dev/null; then
+        tmpfile=$(mktemp) || { log_error "[${label}] mktemp failed"; return 1; }
+
+        log_info "[${label}] rate-mirrors arch | protocol=${MIRROR_PROTOCOL} max-delay=${MIRROR_MAX_DELAY}s concurrency=${MIRROR_CONCURRENCY} max-jumps=${MIRROR_MAX_JUMPS} neighbors=${MIRROR_NEIGHBORS} per-country=${MIRROR_PER_COUNTRY} retest-top=${MIRROR_RETEST_TOP} count=${MIRROR_COUNT} sort=score_asc"
+
+        sudo rate-mirrors \
+            --allow-root \
+            --save="$tmpfile" \
+            --disable-comments-in-file \
+            --concurrency="$MIRROR_CONCURRENCY" \
+            --max-jumps="$MIRROR_MAX_JUMPS" \
+            --protocol="$MIRROR_PROTOCOL" \
+            arch \
+            --max-delay="$MIRROR_MAX_DELAY" \
+            --sort-mirrors-by=score_asc \
+            --country-neighbors-per-country="$MIRROR_NEIGHBORS" \
+            --country-test-mirrors-per-country="$MIRROR_PER_COUNTRY" \
+            --top-mirrors-number-to-retest="$MIRROR_RETEST_TOP" \
+            --max-mirrors-to-output="$MIRROR_COUNT" \
+            2>&1 \
+        && [[ -s "$tmpfile" ]] && {
+            sudo cp "$list_path" "${list_path}.orig" 2>/dev/null || true
+            sudo mv "$tmpfile" "$list_path"
+            sudo chmod 644 "$list_path"
+            log_info "[${label}] Mirrorlist written → ${list_path}"
+            return 0
+        }
+
+        log_error "[${label}] rate-mirrors failed – falling through"
+        rm -f "$tmpfile"
+    else
+        log_info "[${label}] rate-mirrors not found"
+    fi
+
+    # Tier 2: rankmirrors
+    if command -v rankmirrors &>/dev/null; then
+        local orig="${list_path}.orig"
+        [[ -f "$orig" ]] || sudo cp "$list_path" "$orig" 2>/dev/null || true
+        if _rankmirrors_run "$label" "$orig" "$list_path"; then
+            return 0
+        fi
+    else
+        log_info "[${label}] rankmirrors not found"
+    fi
+
+    log_error "[${label}] All ranking methods failed – mirrorlist unchanged"
+    return 1
+}
+
+rank_optional_repos() {
+    log_header "Optional Repository Mirrors"
+
+    declare -A OPTIONAL_REPOS=(
+        ["Chaotic-AUR"]="chaotic-aur:/etc/pacman.d/chaotic-mirrorlist"
+        ["BlackArch"]="blackarch:/etc/pacman.d/blackarch-mirrorlist"
+    )
+
+    local name mapping subcmd list_path orig
+    for name in "${!OPTIONAL_REPOS[@]}"; do
+        mapping="${OPTIONAL_REPOS[$name]}"
+        subcmd="${mapping%%:*}"
+        list_path="${mapping##*:}"
+
+        [[ -f "$list_path" ]] || continue
+
+        if ! ask_yes_no "Rank ${name} mirrors?" "N"; then
+            log_info "Skipped ${name}"
+            continue
+        fi
+
+        # Tier 1: rate-mirrors
+        if command -v rate-mirrors &>/dev/null; then
+            if _rate_mirrors_run "${name} Mirrors" "$subcmd" "$list_path"; then
+                continue
+            fi
+            log_error "[${name}] rate-mirrors failed – trying rankmirrors"
+        else
+            log_info "[${name}] rate-mirrors not found"
+        fi
+
+        # Tier 2: rankmirrors
+        if command -v rankmirrors &>/dev/null; then
+            orig="${list_path}.orig"
+            [[ -f "$orig" ]] || sudo cp "$list_path" "$orig" 2>/dev/null || true
+            _rankmirrors_run "${name} Mirrors" "$orig" "$list_path" || \
+                log_error "[${name}] rankmirrors also failed – mirrorlist unchanged"
+        else
+            log_error "[${name}] No ranking tool available – mirrorlist unchanged"
+        fi
+    done
 }
 
 mirrorlist() {
@@ -283,27 +360,36 @@ mirrorlist() {
 
     local distro
     distro=$(detect_distro)
+    log_info "Detected distro: ${distro}"
 
-    if [[ "$distro" == "endeavouros" ]]; then
-        if ask_yes_no "Rank EndeavourOS mirrors?" "N"; then
-            rank_eos_mirrors
-        else
-            log_info "Mirror ranking skipped."
-        fi
+    # Step 1: distro-specific mirrors
+    case "$distro" in
+        arch)
+            ;;
+        *)
+            local mapping
+            mapping=$(map_distro "$distro")
+            if [[ -n "$mapping" ]]; then
+                if ask_yes_no "Rank ${distro^} mirrors?" "N"; then
+                    rank_distro_mirrors "$distro"
+                else
+                    log_info "Skipped ${distro^} mirrors"
+                fi
+            else
+                log_info "No distro-specific mirrorlist entry for: ${distro}"
+            fi
+            ;;
+    esac
 
-    elif [[ "$distro" == "cachyos" ]]; then
-        if ask_yes_no "Rank CachyOS mirrors?" "N"; then
-            rank_cachyos_mirrors
-        else
-            log_info "Mirror ranking skipped."
-        fi
+    # Step 2: base Arch mirrorlist
+    if ask_yes_no "Rank Arch mirrors?" "N"; then
+        rank_arch_mirrors
+    else
+        log_info "Skipped Arch mirrors"
     fi
 
-    if ! ask_yes_no "Rank Arch mirrors?" "N"; then
-        log_info "Mirror ranking skipped."
-        return 0
-    fi
-    rank_arch_mirrors
+    # Step 3: optional repos
+    rank_optional_repos
 }
 
 #============================================================
