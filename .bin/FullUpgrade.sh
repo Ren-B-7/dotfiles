@@ -151,7 +151,6 @@ _rate_mirrors_run() {
         --protocol="$MIRROR_PROTOCOL" \
         "$subcmd" \
         --max-delay="$MIRROR_MAX_DELAY" \
-        --country-neighbors-per-country="$MIRROR_NEIGHBORS" \
         --country-test-mirrors-per-country="$MIRROR_PER_COUNTRY" \
         --top-mirrors-number-to-retest="$MIRROR_RETEST_TOP" \
         --max-mirrors-to-output="$MIRROR_COUNT" \
@@ -278,7 +277,6 @@ rank_arch_mirrors() {
             arch \
             --max-delay="$MIRROR_MAX_DELAY" \
             --sort-mirrors-by=score_asc \
-            --country-neighbors-per-country="$MIRROR_NEIGHBORS" \
             --country-test-mirrors-per-country="$MIRROR_PER_COUNTRY" \
             --top-mirrors-number-to-retest="$MIRROR_RETEST_TOP" \
             --max-mirrors-to-output="$MIRROR_COUNT" \
