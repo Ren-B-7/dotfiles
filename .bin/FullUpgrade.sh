@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #============================================================
 # SYSTEM UPGRADE SCRIPT FOR ARCH/ENDEAVOUROS
