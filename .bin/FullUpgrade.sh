@@ -101,17 +101,21 @@ show_disk_space() {
 #  MIRROR RANKING SECTION
 # =============================================================
  
-# Global flags (go BEFORE the subcommand)
+# Global flags (go BEFORE the subcommand):
+#   --concurrency, --max-jumps, --top-mirrors-number-to-retest,
+#   --max-mirrors-to-output, --country-test-mirrors-per-country,
+#   --protocol, --save, --disable-comments-in-file
+#
+# Subcommand-specific flags (go AFTER the subcommand):
+#   --max-delay             : arch, endeavouros, manjaro only
+#   --sort-mirrors-by       : arch only
+ 
 readonly MIRROR_COUNT=20
 readonly MIRROR_CONCURRENCY=8
 readonly MIRROR_MAX_JUMPS=5
 readonly MIRROR_RETEST_TOP=5
+readonly MIRROR_PER_COUNTRY=3
 readonly MIRROR_PROTOCOL="https"
- 
-# Subcommand-specific flags
-# --max-delay        : arch, endeavouros, manjaro only
-# --sort-mirrors-by  : arch only
-# --max-delay is NOT supported by: chaotic-aur, blackarch, cachyos, arcolinux, artix, rebornos, archarm
 readonly MIRROR_MAX_DELAY=86400
  
 detect_distro() {
@@ -138,7 +142,7 @@ map_distro() {
     esac
 }
  
-# Subcommands that support --max-delay and --country-test-mirrors-per-country
+# Subcommands that support --max-delay
 _subcmd_supports_delay() {
     case "$1" in
         arch|endeavouros|manjaro) return 0 ;;
@@ -146,8 +150,6 @@ _subcmd_supports_delay() {
     esac
 }
  
-# Generic rate-mirrors runner for distro subcommands (non-arch)
-# Builds the flag set based on what the subcommand actually supports
 _rate_mirrors_run() {
     local label="$1" subcmd="$2" out_path="$3"
     local tmpfile
@@ -156,13 +158,10 @@ _rate_mirrors_run() {
     # Build subcommand-specific args
     local subcmd_args=()
     if _subcmd_supports_delay "$subcmd"; then
-        subcmd_args+=(
-            --max-delay="$MIRROR_MAX_DELAY"
-            --country-test-mirrors-per-country="$MIRROR_PER_COUNTRY"
-        )
+        subcmd_args+=( --max-delay="$MIRROR_MAX_DELAY" )
     fi
  
-    log_info "[${label}] rate-mirrors ${subcmd} | protocol=${MIRROR_PROTOCOL} concurrency=${MIRROR_CONCURRENCY} max-jumps=${MIRROR_MAX_JUMPS} retest-top=${MIRROR_RETEST_TOP} count=${MIRROR_COUNT}${subcmd_args:+ max-delay=${MIRROR_MAX_DELAY} per-country=${MIRROR_PER_COUNTRY}}"
+    log_info "[${label}] rate-mirrors ${subcmd} | protocol=${MIRROR_PROTOCOL} concurrency=${MIRROR_CONCURRENCY} max-jumps=${MIRROR_MAX_JUMPS} retest-top=${MIRROR_RETEST_TOP} per-country=${MIRROR_PER_COUNTRY} count=${MIRROR_COUNT}${subcmd_args:+ max-delay=${MIRROR_MAX_DELAY}}"
  
     sudo rate-mirrors \
         --allow-root \
@@ -171,10 +170,11 @@ _rate_mirrors_run() {
         --concurrency="$MIRROR_CONCURRENCY" \
         --max-jumps="$MIRROR_MAX_JUMPS" \
         --top-mirrors-number-to-retest="$MIRROR_RETEST_TOP" \
+        --max-mirrors-to-output="$MIRROR_COUNT" \
+        --country-test-mirrors-per-country="$MIRROR_PER_COUNTRY" \
         --protocol="$MIRROR_PROTOCOL" \
         "$subcmd" \
         "${subcmd_args[@]}" \
-        --max-mirrors-to-output="$MIRROR_COUNT" \
         2>&1 \
     || {
         log_error "[${label}] rate-mirrors failed"
@@ -283,12 +283,11 @@ rank_arch_mirrors() {
     local tmpfile
  
     # Tier 1: rate-mirrors
-    # arch subcommand supports: --max-delay, --sort-mirrors-by, --country-test-mirrors-per-country
-    # --sort-mirrors-by=score_asc: health-filtered before speed
+    # --sort-mirrors-by=score_asc: health-filtered before speed (arch only)
     if command -v rate-mirrors &>/dev/null; then
         tmpfile=$(mktemp) || { log_error "[${label}] mktemp failed"; return 1; }
  
-        log_info "[${label}] rate-mirrors arch | protocol=${MIRROR_PROTOCOL} concurrency=${MIRROR_CONCURRENCY} max-jumps=${MIRROR_MAX_JUMPS} retest-top=${MIRROR_RETEST_TOP} count=${MIRROR_COUNT} max-delay=${MIRROR_MAX_DELAY} sort=score_asc"
+        log_info "[${label}] rate-mirrors arch | protocol=${MIRROR_PROTOCOL} concurrency=${MIRROR_CONCURRENCY} max-jumps=${MIRROR_MAX_JUMPS} retest-top=${MIRROR_RETEST_TOP} per-country=${MIRROR_PER_COUNTRY} count=${MIRROR_COUNT} max-delay=${MIRROR_MAX_DELAY} sort=score_asc"
  
         sudo rate-mirrors \
             --allow-root \
@@ -297,11 +296,12 @@ rank_arch_mirrors() {
             --concurrency="$MIRROR_CONCURRENCY" \
             --max-jumps="$MIRROR_MAX_JUMPS" \
             --top-mirrors-number-to-retest="$MIRROR_RETEST_TOP" \
+            --max-mirrors-to-output="$MIRROR_COUNT" \
+            --country-test-mirrors-per-country="$MIRROR_PER_COUNTRY" \
             --protocol="$MIRROR_PROTOCOL" \
             arch \
             --max-delay="$MIRROR_MAX_DELAY" \
             --sort-mirrors-by=score_asc \
-            --max-mirrors-to-output="$MIRROR_COUNT" \
             2>&1 \
         && [[ -s "$tmpfile" ]] && {
             sudo cp "$list_path" "${list_path}.orig" 2>/dev/null || true
@@ -335,7 +335,6 @@ rank_arch_mirrors() {
 rank_optional_repos() {
     log_header "Optional Repository Mirrors"
  
-    # chaotic-aur and blackarch have minimal subcommand options — no --max-delay support
     declare -A OPTIONAL_REPOS=(
         ["Chaotic-AUR"]="chaotic-aur:/etc/pacman.d/chaotic-mirrorlist"
         ["BlackArch"]="blackarch:/etc/pacman.d/blackarch-mirrorlist"
