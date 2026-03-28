@@ -9,6 +9,10 @@ set -o pipefail
 
 # Error handling
 trap 'log_error "Script interrupted"; exit 130' SIGINT SIGTERM
+trap 'log_error "Script interrupted"; exit 130' SIGINT SIGKILL
+trap 'log_error "Script interrupted"; exit 130' SIGINT SIGTSTP
+trap 'log_error "Script interrupted"; exit 130' SIGINT SIGABRT
+trap 'log_error "Script interrupted"; exit 130' SIGINT SIGQUIT
 trap 'log_error "Script error at line $LINENO"; exit 1' ERR
 
 #============================================================
