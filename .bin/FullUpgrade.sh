@@ -113,7 +113,6 @@ readonly MIRROR_PROTOCOL="https"
 # --sort-mirrors-by  : arch only
 # --max-delay is NOT supported by: chaotic-aur, blackarch, cachyos, arcolinux, artix, rebornos, archarm
 readonly MIRROR_MAX_DELAY=86400
-readonly MIRROR_PER_COUNTRY=3
  
 detect_distro() {
     if [[ -f /etc/os-release ]]; then
@@ -289,7 +288,7 @@ rank_arch_mirrors() {
     if command -v rate-mirrors &>/dev/null; then
         tmpfile=$(mktemp) || { log_error "[${label}] mktemp failed"; return 1; }
  
-        log_info "[${label}] rate-mirrors arch | protocol=${MIRROR_PROTOCOL} concurrency=${MIRROR_CONCURRENCY} max-jumps=${MIRROR_MAX_JUMPS} retest-top=${MIRROR_RETEST_TOP} count=${MIRROR_COUNT} max-delay=${MIRROR_MAX_DELAY} per-country=${MIRROR_PER_COUNTRY} sort=score_asc"
+        log_info "[${label}] rate-mirrors arch | protocol=${MIRROR_PROTOCOL} concurrency=${MIRROR_CONCURRENCY} max-jumps=${MIRROR_MAX_JUMPS} retest-top=${MIRROR_RETEST_TOP} count=${MIRROR_COUNT} max-delay=${MIRROR_MAX_DELAY} sort=score_asc"
  
         sudo rate-mirrors \
             --allow-root \
@@ -302,7 +301,6 @@ rank_arch_mirrors() {
             arch \
             --max-delay="$MIRROR_MAX_DELAY" \
             --sort-mirrors-by=score_asc \
-            --country-test-mirrors-per-country="$MIRROR_PER_COUNTRY" \
             --max-mirrors-to-output="$MIRROR_COUNT" \
             2>&1 \
         && [[ -s "$tmpfile" ]] && {
