@@ -50,6 +50,4 @@ if command -v zoxide >/dev/null 2>&1; then
 
     # alias cd to z
     alias cd='z'
-else
-    echo "zoxide is not installed"
 fi
