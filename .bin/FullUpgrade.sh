@@ -178,13 +178,13 @@ _rate_mirrors_run() {
         2>&1 \
     || {
         log_error "[${label}] rate-mirrors failed"
-        rm -f "$tmpfile"
+        sudo rm -f "$tmpfile"
         return 1
     }
  
     if [[ ! -s "$tmpfile" ]]; then
         log_error "[${label}] rate-mirrors produced empty output"
-        rm -f "$tmpfile"
+        sudo rm -f "$tmpfile"
         return 1
     fi
  
@@ -312,7 +312,7 @@ rank_arch_mirrors() {
         }
  
         log_error "[${label}] rate-mirrors failed – falling through"
-        rm -f "$tmpfile"
+        sudo rm -f "$tmpfile"
     else
         log_info "[${label}] rate-mirrors not found"
     fi
