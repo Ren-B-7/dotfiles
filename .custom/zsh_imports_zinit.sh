@@ -29,8 +29,6 @@ zinit snippet OMZP::cp
 zinit ice wait lucid
 zinit snippet OMZP::copyfile
 zinit ice wait lucid
-zinit snippet OMZP::zoxide
-zinit ice wait lucid
 zinit snippet OMZP::archlinux
 
 # History setup
@@ -43,9 +41,15 @@ setopt hist_ignore_dups
 setopt hist_verify
 setopt COMBINING_CHARS
 
-export _ZO_MAXAGE=100
+if command -v zoxide >/dev/null 2>&1; then
+    export _ZO_MAXAGE=100
+    eval "$(zoxide init zsh)"
 
-eval "$(zoxide init zsh)"
+    zinit ice wait lucid
+    zinit snippet OMZP::zoxide
 
-# alias cd to z
-alias cd='z'
+    # alias cd to z
+    alias cd='z'
+else
+    echo "zoxide is not installed"
+fi
