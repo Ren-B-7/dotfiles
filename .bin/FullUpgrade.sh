@@ -153,7 +153,7 @@ _subcmd_supports_delay() {
 _rate_mirrors_run() {
     local label="$1" subcmd="$2" out_path="$3"
     local tmpfile
-    tmpfile=$(mktemp) || { log_error "[${label}] mktemp failed"; return 1; }
+    tmpfile=$(sudo mktemp) || { log_error "[${label}] mktemp failed"; return 1; }
  
     # Build subcommand-specific args
     local subcmd_args=()
@@ -285,7 +285,7 @@ rank_arch_mirrors() {
     # Tier 1: rate-mirrors
     # --sort-mirrors-by=score_asc: health-filtered before speed (arch only)
     if command -v rate-mirrors &>/dev/null; then
-        tmpfile=$(mktemp) || { log_error "[${label}] mktemp failed"; return 1; }
+        tmpfile=$(sudo mktemp) || { log_error "[${label}] mktemp failed"; return 1; }
  
         log_info "[${label}] rate-mirrors arch | protocol=${MIRROR_PROTOCOL} concurrency=${MIRROR_CONCURRENCY} max-jumps=${MIRROR_MAX_JUMPS} retest-top=${MIRROR_RETEST_TOP} per-country=${MIRROR_PER_COUNTRY} count=${MIRROR_COUNT} max-delay=${MIRROR_MAX_DELAY} sort=score_asc"
  
