@@ -45,14 +45,22 @@ ask_yes_no() {
     local default="${2:-N}"
     local answer
 
-    while true; do
-        read -rp "++=++ ${prompt} (${default}): " answer
-        answer="${answer:-$default}"
+    # Normalize default
+    default="${default^^}"
 
-        # Convert to uppercase for comparison
+    # Prompt hint
+    local hint
+    if [[ "$default" == "Y" ]]; then
+        hint="[Y/n]"
+    else
+        hint="[y/N]"
+    fi
+
+    while true; do
+        read -rp "++=++ ${prompt} ${hint}: " answer
+        answer="${answer:-$default}"
         answer="${answer^^}"
 
-        # Match Y, YE, YES for yes; N, NO for no
         case "$answer" in
             Y|YE|YES)
                 return 0
@@ -61,7 +69,7 @@ ask_yes_no() {
                 return 1
                 ;;
             *)
-                log_error "Invalid input. Please enter [^y|^ye|^yes], or [^n|^no]"
+                log_error "Invalid input. Please enter yes or no."
                 ;;
         esac
     done
@@ -88,6 +96,62 @@ show_disk_space() {
 #============================================================
 # MIRROR FUNCTIONS
 #============================================================
+
+rank_cachyos_mirrors() {
+    local name="CachyOS Mirrors"
+    local num_mirrors=15
+    local mirrorlist_path="/etc/pacman.d/cachyos-mirrorlist"
+    local orig_path="/etc/pacman.d/cachyos-mirrorlist.orig"
+
+    log_info "[${name}] Preparing mirrorlist…"
+
+    # Ensure mirrorlist exists
+    if [[ ! -f "$mirrorlist_path" ]]; then
+        log_error "CachyOS mirrorlist not found at $mirrorlist_path"
+        return 1
+    fi
+
+    # Backup current list
+    sudo cp "$mirrorlist_path" "$orig_path"
+
+    # --- Preferred method ---
+    if command -v cachyos-rankmirrors &>/dev/null; then
+        log_info "[${name}] Using cachyos-rankmirrors (recommended)…"
+
+        # Let it handle everything (no overrides unless needed)
+        sudo cachyos-rankmirrors || {
+            log_error "cachyos-rankmirrors failed"
+            return 1
+        }
+
+        log_info "[${name}] Mirror ranking complete"
+        return 0
+    fi
+
+    # --- Fallback (generic Arch tool) ---
+    log_info "[${name}] cachyos-rankmirrors not found, falling back to rankmirrors…"
+
+    if ! command -v rankmirrors &>/dev/null; then
+        log_error "Neither cachyos-rankmirrors nor rankmirrors is installed"
+        return 1
+    fi
+
+    local ranked_output
+    ranked_output=$(sudo rankmirrors -p -w -n "$num_mirrors" "$orig_path") || {
+        log_error "rankmirrors failed"
+        return 1
+    }
+
+    echo "$ranked_output" | sudo tee "$mirrorlist_path" > /dev/null
+    sudo chmod 644 "$mirrorlist_path"
+
+    local final_count
+    final_count=$(echo "$ranked_output" | grep -c "^Server")
+
+    log_info "[${name}] Ranked and saved ${final_count} mirrors (fallback mode)"
+
+    return 0
+}
 
 rank_arch_mirrors() {
     local name="Arch Mirrors"
@@ -151,21 +215,57 @@ rank_arch_mirrors() {
 
 rank_eos_mirrors() {
     local name="EndeavourOS Mirrors"
+    local num_mirrors=15
 
-    log_info "[${name}] Running eos-rankmirrors…"
+    local mirrorlist_path="/etc/pacman.d/endeavouros-mirrorlist"
+    local orig_path="/etc/pacman.d/endeavouros-mirrorlist.orig"
 
-    # Check for eos-rankmirrors
-    if ! command -v eos-rankmirrors &>/dev/null; then
-        log_error "eos-rankmirrors is not installed"
+    log_info "[${name}] Preparing mirrorlist…"
+
+    # Ensure mirrorlist exists
+    if [[ ! -f "$mirrorlist_path" ]]; then
+        log_error "EndeavourOS mirrorlist not found at $mirrorlist_path"
         return 1
     fi
 
-    sudo eos-rankmirrors || {
-        log_error "eos-rankmirrors failed"
+    # Backup current list
+    sudo cp "$mirrorlist_path" "$orig_path"
+
+    # --- Preferred method ---
+    if command -v eos-rankmirrors &>/dev/null; then
+        log_info "[${name}] Using eos-rankmirrors (recommended)…"
+
+        sudo eos-rankmirrors || {
+            log_error "eos-rankmirrors failed"
+            return 1
+        }
+
+        log_info "[${name}] Mirror ranking complete"
+        return 0
+    fi
+
+    # --- Fallback ---
+    log_info "[${name}] eos-rankmirrors not found, falling back to rankmirrors…"
+
+    if ! command -v rankmirrors &>/dev/null; then
+        log_error "Neither eos-rankmirrors nor rankmirrors is installed"
+        return 1
+    fi
+
+    local ranked_output
+    ranked_output=$(sudo rankmirrors -p -w -n "$num_mirrors" "$orig_path") || {
+        log_error "rankmirrors failed"
         return 1
     }
 
-    log_info "[${name}] Mirror ranking complete"
+    echo "$ranked_output" | sudo tee "$mirrorlist_path" > /dev/null
+    sudo chmod 644 "$mirrorlist_path"
+
+    local final_count
+    final_count=$(echo "$ranked_output" | grep -c "^Server")
+
+    log_info "[${name}] Ranked and saved ${final_count} mirrors (fallback mode)"
+
     return 0
 }
 
@@ -185,12 +285,20 @@ mirrorlist() {
     distro=$(detect_distro)
 
     if [[ "$distro" == "endeavouros" ]]; then
-        if ! ask_yes_no "Rank EndeavourOS mirrors?" "N"; then
+        if ask_yes_no "Rank EndeavourOS mirrors?" "N"; then
+            rank_eos_mirrors
+        else
             log_info "Mirror ranking skipped."
-            return 0
         fi
-        rank_eos_mirrors
+
+    elif [[ "$distro" == "cachyos" ]]; then
+        if ask_yes_no "Rank CachyOS mirrors?" "N"; then
+            rank_cachyos_mirrors
+        else
+            log_info "Mirror ranking skipped."
+        fi
     fi
+
     if ! ask_yes_no "Rank Arch mirrors?" "N"; then
         log_info "Mirror ranking skipped."
         return 0
