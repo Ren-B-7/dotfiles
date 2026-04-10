@@ -5,6 +5,9 @@ export LANG=en_GB.UTF-8
 export CARGOINSTALLPATH="$HOME/.cargo/bin/"
 export PATH="$CARGOINSTALLPATH:$PATH"
 
+# Switch npm install directory to /home
+export PATH=$HOME/.npm-global/bin:$PATH
+
 export MASON_INSTALLED_LSPS="$HOME/.local/share/Simplexity.nvim/mason/bin/"
 export PATH="$MASON_INSTALLED_LSPS:$PATH"
 # Need to add lsps to python paths, since some are seen as python modules
