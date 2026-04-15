@@ -40,6 +40,7 @@ setopt hist_expire_dups_first
 setopt hist_ignore_dups
 setopt hist_verify
 setopt COMBINING_CHARS
+setopt INTERACTIVE_COMMENTS
 
 if command -v zoxide >/dev/null 2>&1; then
     export _ZO_MAXAGE=100
