@@ -1,6 +1,7 @@
 # Auto-detect repo root (where this Makefile lives)
 DOTFILES_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 HOME_DIR := $(HOME)
+CONFIG_HOME := $(if $(XDG_CONFIG_HOME),$(XDG_CONFIG_HOME),$(HOME_DIR)/.config)
 BIN_DIR := $(HOME)/.local/bin
 
 # Things we don't want to symlink
@@ -11,6 +12,7 @@ EXCLUDES := .git .gitignore README.md Makefile
 install:
 	@echo "Dotfiles dir: $(DOTFILES_DIR)"
 	@echo "Installing to: $(HOME_DIR)"
+	@echo "Config home: $(CONFIG_HOME)"
 	@echo
 
 	@echo "Ensuring bin directory exists..."
@@ -26,6 +28,7 @@ install:
 		[ "$$name" = "." ] || [ "$$name" = ".." ] && skip=true; \
 		[ "$$name" = ".bin" ] && skip=true; \
 		[ "$$name" = ".crucial" ] && skip=true; \
+		[ "$$name" = "wezterm.lua" ] && skip=true; \
 		if [ "$$skip" = false ]; then \
 			target="$(HOME_DIR)/$$name"; \
 			echo "Linking $$name → $$target"; \
@@ -34,6 +37,12 @@ install:
 		fi \
 	done
 
+	@echo
+	@echo "Installing WezTerm config..."
+	@rm -f "$(CONFIG_HOME)/wezterm/wezterm.lua"
+	@ln -s "$(DOTFILES_DIR)/wezterm.lua" "$(CONFIG_HOME)/wezterm/wezterm.lua"
+	@echo "Linked wezterm.lua → $(CONFIG_HOME)/wezterm/wezterm.lua"
+	
 	@echo
 	@echo "Processing .bin scripts..."
 	@for file in $(DOTFILES_DIR)/.bin/*; do \
