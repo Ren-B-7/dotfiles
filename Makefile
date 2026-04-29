@@ -1,7 +1,7 @@
 # Auto-detect repo root (where this Makefile lives)
 DOTFILES_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 HOME_DIR := $(HOME)
-CONFIG_HOME := $(if $(XDG_CONFIG_HOME),$(XDG_CONFIG_HOME),$(HOME_DIR)/.config)
+CONFIG_HOME := $(if $(XDG_CONFIG_HOME),$(XDG_CONFIG_HOME),$(HOME_DIR)/.config/)
 BIN_DIR := $(HOME)/.local/bin
 
 # Things we don't want to symlink
@@ -27,8 +27,9 @@ install:
 		done; \
 		[ "$$name" = "." ] || [ "$$name" = ".." ] && skip=true; \
 		[ "$$name" = ".bin" ] && skip=true; \
+		[ "$$name" = ".custom" ] && skip=true; \
 		[ "$$name" = ".crucial" ] && skip=true; \
-		[ "$$name" = "wezterm.lua" ] && skip=true; \
+		[ "$$name" = ".git" ] && skip=true; \
 		if [ "$$skip" = false ]; then \
 			target="$(HOME_DIR)/$$name"; \
 			echo "Linking $$name → $$target"; \
@@ -39,10 +40,11 @@ install:
 
 	@echo
 	@echo "Installing WezTerm config..."
-	@rm -f "$(CONFIG_HOME)/wezterm/wezterm.lua"
-	@ln -s "$(DOTFILES_DIR)/wezterm.lua" "$(CONFIG_HOME)/wezterm/wezterm.lua"
-	@echo "Linked wezterm.lua → $(CONFIG_HOME)/wezterm/wezterm.lua"
-	
+	@mkdir -p "$(CONFIG_HOME)wezterm"
+	@rm -f "$(CONFIG_HOME)wezterm/wezterm.lua"
+	@ln -s "$(DOTFILES_DIR)/wezterm.lua" "$(CONFIG_HOME)wezterm/wezterm.lua"
+	@echo "Linked wezterm.lua → $(CONFIG_HOME)wezterm/wezterm.lua"
+
 	@echo
 	@echo "Processing .bin scripts..."
 	@for file in $(DOTFILES_DIR)/.bin/*; do \
@@ -68,4 +70,4 @@ install:
 
 font:
 	@echo "Installing fonts..."
-	./install_fonts.sh
+	@bash .crucial/nerdfont_install.sh
