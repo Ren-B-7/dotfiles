@@ -33,6 +33,7 @@ config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 config.color_scheme = "Flat (base16)"
 config.cursor_blink_ease_in = "Constant"
 config.cursor_blink_ease_out = "Constant"
+config.audible_bell = "Disabled"
 
 -- Fixed Key Mappings
 config.keys = {

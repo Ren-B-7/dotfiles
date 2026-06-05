@@ -41,8 +41,8 @@ else
     alias rm="rm -i"
 fi
 
+alias gg="gemini"
+
 if command -v yazi >/dev/null 2>&1; then
     alias y="yazi"
 fi
-
-
