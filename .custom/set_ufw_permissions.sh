@@ -15,14 +15,14 @@ function ufwSet() {
         return 1
     elif [[ $environment == "Public" ]]; then
         echo "Switching to Public Environment..."
-        source "$HOME/.custom_shell_scripts/set_ufw/public.sh"
+        source "$HOME/.custom/set_ufw/public.sh"
     elif [[ $environment == "Home" ]]; then
         echo "Switching to Home Environment..."
-        source "$HOME/.custom_shell_scripts/set_ufw/home.sh"
+        source "$HOME/.custom/set_ufw/home.sh"
     elif [[ $environment == "Work" ]]; then
         echo "Switching to Work Environment..."
-        source "$HOME/.custom_shell_scripts/set_ufw/work.sh"
+        source "$HOME/.custom/set_ufw/work.sh"
     elif [[ $environment == "Clear backups" ]]; then
-        sudo "$HOME/.custom_shell_scripts/set_ufw/clear.sh"
+        sudo "$HOME/.custom/set_ufw/clear.sh"
     fi
 }
