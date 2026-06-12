@@ -22,7 +22,11 @@ sudo ufw allow 3306/tcp  # MySQL database
 sudo ufw allow 5432/tcp  # PostgreSQL database
 sudo ufw allow 5900/tcp  # VNC server (remote work access)
 sudo ufw allow 5000/tcp  # Flask dev server
+sudo ufw allow ssh      # Secure Shell (SSH)
+sudo ufw allow http     # Web Server (HTTP)
+sudo ufw allow https    # Secure Web Server (HTTPS)
 sudo ufw allow 8000/tcp  # Custom dev server
+sudo ufw allow 9000/tcp  # Custom port for weylus
 
 # Ensure UFW is enabled
 sudo ufw enable

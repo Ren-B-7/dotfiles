@@ -46,3 +46,8 @@ alias gg="gemini"
 if command -v yazi >/dev/null 2>&1; then
     alias y="yazi"
 fi
+
+if command -v weylus >/dev/null 2>&1; then
+	alias weylus='WEYLUS_USE_PIPEWIRE=1 weylus'
+fi
+

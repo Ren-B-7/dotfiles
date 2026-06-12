@@ -17,6 +17,7 @@ sudo ufw default allow outgoing
 sudo ufw allow ssh      # Secure Shell (SSH)
 sudo ufw allow http     # Web Server (HTTP)
 sudo ufw allow https    # Secure Web Server (HTTPS)
+sudo ufw allow 9000/tcp # Custom port for weylus
 
 # Ensure UFW is enabled
 sudo ufw enable

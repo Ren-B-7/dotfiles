@@ -25,6 +25,7 @@ sudo ufw allow 3306/tcp   # MySQL
 sudo ufw allow 8080/tcp   # Custom web server
 sudo ufw allow 8000/tcp   # Custom web server
 sudo ufw allow 5900/tcp   # VNC
+sudo ufw allow 9000/tcp   # Custom port for weylus
 
 # Ensure UFW is enabled
 sudo ufw enable
