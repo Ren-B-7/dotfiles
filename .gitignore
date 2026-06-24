@@ -249,3 +249,5 @@ zsdoc/data
 .env
 
 .zhistory*
+**/secret.sh
+secret.sh

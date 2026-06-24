@@ -47,5 +47,5 @@ if command -v yazi >/dev/null 2>&1; then
     alias y="yazi"
 fi
 
-alias tablet-on='kscreen-doctor output.Virtual-1.enable && kscreen-doctor output.Virtual-1.mode.1920x1440@60'
+alias tablet-on='kscreen-doctor output.Virtual-1.enable && kscreen-doctor output.Virtual-1.mode.1920x1080@60'
 alias tablet-off='kscreen-doctor output.Virtual-1.disable'
