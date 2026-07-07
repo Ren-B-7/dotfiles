@@ -48,5 +48,8 @@ fi
 alias tablet-on='kscreen-doctor output.Virtual-1.enable && kscreen-doctor output.Virtual-1.mode.1920x1080@60'
 alias tablet-off='kscreen-doctor output.Virtual-1.disable'
 
-alias ollama-serve="taskset -c 0-5 ollama serve"
+alias ols="taskset -c 0-5 ollama serve"
 alias olr="ollama run"
+alias oll="ollama list"
+alias olp="ollama ps"
+alias olk="ollama stop"
