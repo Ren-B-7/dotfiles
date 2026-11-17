@@ -15,6 +15,7 @@ IMPORTS="$REL_DIR/.custom"
 export IMPORTS
 source "$IMPORTS/zsh_imports_zinit.sh"
 source "$IMPORTS/start.sh"
+source "$IMPORTS/secret.sh"
 
 export LD_PRELOAD=""
 unset LD_PRELOAD

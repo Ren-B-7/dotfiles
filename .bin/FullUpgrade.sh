@@ -1,19 +1,27 @@
 #!/usr/bin/env bash
 
 #============================================================
-# SYSTEM UPGRADE SCRIPT FOR ARCH/ENDEAVOUROS
+# SYSTEM UPGRADE SCRIPT FOR ARCH/ENDEAVOUROS AND DEBIAN/UBUNTU
+# Supports: pacman (+ yay/AUR), apt, flatpak, firmware, shell/yazi
 # Converted from Python to Bash
 #============================================================
 
 set -o pipefail
 
 # Error handling
-trap 'log_error "Script interrupted"; exit 130' SIGINT SIGTERM
-trap 'log_error "Script interrupted"; exit 130' SIGINT SIGKILL
-trap 'log_error "Script interrupted"; exit 130' SIGINT SIGTSTP
-trap 'log_error "Script interrupted"; exit 130' SIGINT SIGABRT
-trap 'log_error "Script interrupted"; exit 130' SIGINT SIGQUIT
-trap 'log_error "Script error at line $LINENO"; exit 1' ERR
+# (SIGKILL/SIGSTOP cannot be trapped; SIGTSTP is left alone so Ctrl+Z still works)
+# Error handling
+SUDO_KEEPALIVE_PID=""
+
+cleanup() {
+    if [[ -n "$SUDO_KEEPALIVE_PID" ]]; then
+        kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+    fi
+}
+
+trap cleanup EXIT
+trap 'log_error "Script interrupted (SIGINT)"; exit 130' INT
+trap 'log_error "Script terminated (SIGTERM)"; exit 143' TERM
 
 #============================================================
 # LOGGING FUNCTIONS
@@ -118,11 +126,20 @@ readonly MIRROR_PER_COUNTRY=3
 readonly MIRROR_PROTOCOL="https"
 readonly MIRROR_MAX_DELAY=86400
 
+# Keep a pristine ".orig" (created once, never overwritten) and a rolling
+# ".bak" (the list as it was before this run).
+backup_mirrorlist() {
+    local path="$1"
+    [[ -f "$path" ]] || return 0
+    [[ -f "${path}.orig" ]] || sudo cp -p "$path" "${path}.orig" 2>/dev/null || true
+    sudo cp -p "$path" "${path}.bak" 2>/dev/null || true
+}
+
 detect_distro() {
     if [[ -f /etc/os-release ]]; then
+        # subshell so os-release variables don't leak into this script
         # shellcheck disable=SC1091
-        . /etc/os-release
-        echo "${ID,,}"
+        ( . /etc/os-release; echo "${ID,,}" )
     else
         echo "unknown"
     fi
@@ -188,7 +205,7 @@ _rate_mirrors_run() {
         return 1
     fi
 
-    sudo cp "$out_path" "${out_path}.orig" 2>/dev/null || true
+    backup_mirrorlist "$out_path"
     sudo mv "$tmpfile" "$out_path"
     sudo chmod 644 "$out_path"
     log_info "[${label}] Mirrorlist written → ${out_path}"
@@ -232,7 +249,7 @@ rank_distro_mirrors() {
         endeavouros)
             if command -v eos-rankmirrors &>/dev/null; then
                 log_info "[${label}] Using eos-rankmirrors …"
-                sudo cp "$list_path" "${list_path}.orig" 2>/dev/null || true
+                backup_mirrorlist "$list_path"
                 if sudo eos-rankmirrors; then
                     return 0
                 fi
@@ -242,7 +259,7 @@ rank_distro_mirrors() {
         cachyos)
             if command -v cachyos-rate-mirrors &>/dev/null; then
                 log_info "[${label}] Using cachyos-rate-mirrors …"
-                sudo cp "$list_path" "${list_path}.orig" 2>/dev/null || true
+                backup_mirrorlist "$list_path"
                 if sudo cachyos-rate-mirrors; then
                     return 0
                 fi
@@ -265,7 +282,7 @@ rank_distro_mirrors() {
     # Tier 3: rankmirrors
     if command -v rankmirrors &>/dev/null; then
         local orig="${list_path}.orig"
-        [[ -f "$orig" ]] || sudo cp "$list_path" "$orig" 2>/dev/null || true
+        backup_mirrorlist "$list_path"
         if _rankmirrors_run "$label" "$orig" "$list_path"; then
             return 0
         fi
@@ -304,7 +321,7 @@ rank_arch_mirrors() {
             --sort-mirrors-by=score_asc \
             2>&1 \
             && [[ -s "$tmpfile" ]] && {
-            sudo cp "$list_path" "${list_path}.orig" 2>/dev/null || true
+            backup_mirrorlist "$list_path"
             sudo mv "$tmpfile" "$list_path"
             sudo chmod 644 "$list_path"
             log_info "[${label}] Mirrorlist written → ${list_path}"
@@ -320,7 +337,7 @@ rank_arch_mirrors() {
     # Tier 2: rankmirrors
     if command -v rankmirrors &>/dev/null; then
         local orig="${list_path}.orig"
-        [[ -f "$orig" ]] || sudo cp "$list_path" "$orig" 2>/dev/null || true
+        backup_mirrorlist "$list_path"
         if _rankmirrors_run "$label" "$orig" "$list_path"; then
             return 0
         fi
@@ -366,7 +383,7 @@ rank_optional_repos() {
         # Tier 2: rankmirrors
         if command -v rankmirrors &>/dev/null; then
             orig="${list_path}.orig"
-            [[ -f "$orig" ]] || sudo cp "$list_path" "$orig" 2>/dev/null || true
+            backup_mirrorlist "$list_path"
             _rankmirrors_run "${name} Mirrors" "$orig" "$list_path" || \
                 log_error "[${name}] rankmirrors also failed – mirrorlist unchanged"
         else
@@ -425,13 +442,32 @@ update_firmware() {
         return 0
     fi
 
+    log_info "Refreshing firmware metadata..."
+    sudo fwupdmgr refresh || true
+
     log_info "Getting firmware update info"
     sudo fwupdmgr get-updates || true
+
+    # get-updates only *lists* updates; nothing is installed unless we ask
+    if ask_yes_no "Install available firmware updates?" "N"; then
+        sudo fwupdmgr update || true
+    fi
 }
 
 #============================================================
 # PACKAGE MANAGER FUNCTIONS
 #============================================================
+
+# Leftover download-XXXXXX dirs from interrupted downloads make `pacman -Sc`
+# fail with "could not open file ... Error reading fd".
+clean_stale_pacman_downloads() {
+    if [[ -e /var/lib/pacman/db.lck ]]; then
+        log_error "pacman lock exists (/var/lib/pacman/db.lck) – skipping stale download cleanup"
+        return 1
+    fi
+    log_info "Removing stale partial downloads (download-*)..."
+    sudo rm -rf /var/cache/pacman/pkg/download-*
+}
 
 update_pacman() {
     log_header "Pacman Update"
@@ -441,27 +477,30 @@ update_pacman() {
         return 0
     fi
 
-    log_info "Updating pacman database..."
-    sudo pacman -Syy || true
-
-    log_info "Performing full system upgrade..."
-    sudo pacman -Su || true
+    # Single -Syu: never sync and upgrade in separate steps (partial upgrades)
+    log_info "Syncing databases and performing full system upgrade..."
+    if ! sudo pacman -Syu; then
+        log_error "pacman upgrade failed – skipping orphan removal, cache cleanup and AUR"
+        return 1
+    fi
 
     log_info "Checking for orphaned packages..."
-    local orphans
-    orphans=$(pacman -Qdtq 2>/dev/null) || true
-    if [[ -n "$orphans" ]]; then
-        log_info "Found orphaned packages, removing..."
-        # Use printf to safely pass orphans as separate arguments
-        printf '%s\n' "$orphans" | xargs -r sudo pacman -Rs --noconfirm 2>/dev/null || true
+    local -a orphans=()
+    mapfile -t orphans < <(pacman -Qdtq 2>/dev/null)
+    if (( ${#orphans[@]} > 0 )); then
+        log_info "Orphans: ${orphans[*]}"
+        # pacman shows the full removal list and asks for confirmation itself
+        sudo pacman -Rns "${orphans[@]}" || log_error "Orphan removal failed or was declined"
     else
         log_info "No orphaned packages found"
     fi
 
     if ask_yes_no "Clean pacman cache?" "Y"; then
         log_info "Cleaning pacman cache..."
+        clean_stale_pacman_downloads || true
         sudo pacman -Sc || true
     fi
+    return 0
 }
 
 update_aur() {
@@ -477,13 +516,93 @@ update_aur() {
         return 0
     fi
 
+    # -Sua = AUR only (repo packages are handled by update_pacman, so no
+    # partial-upgrade risk). VCS packages (-git etc.) only update with --devel.
+    local -a yay_args=(-Sua)
+    if ask_yes_no "Also check VCS packages (-git/-svn, --devel)?" "N"; then
+        yay_args+=(--devel)
+    fi
+
+    # No `timeout` here: it kills builds mid-way and breaks interactive prompts
     log_info "Updating AUR packages..."
-    timeout 300 yay -Su 2>&1 || true
+    yay "${yay_args[@]}" || log_error "yay finished with errors"
 
     if ask_yes_no "Clean yay cache?" "N"; then
         log_info "Cleaning yay cache..."
-        yay -Sc 2>&1 || true
+        clean_stale_pacman_downloads || true
+        yay -Sc || true
     fi
+    return 0
+}
+
+#============================================================
+# APT FUNCTIONS (Debian / Ubuntu / Mint / Pop!_OS / ...)
+#============================================================
+
+# Returns 0 if another apt/dpkg process currently holds the dpkg lock
+apt_locked() {
+    local lock
+    for lock in /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock; do
+        [[ -e "$lock" ]] || continue
+        if sudo fuser "$lock" &>/dev/null; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+update_apt() {
+    log_header "APT Update"
+
+    if ! ask_yes_no "Update apt?" "N"; then
+        log_info "Apt update skipped."
+        return 0
+    fi
+
+    if command -v fuser &>/dev/null && apt_locked; then
+        log_error "Another apt/dpkg process is running (lock held) – skipping apt update"
+        return 1
+    fi
+
+    log_info "Refreshing package lists..."
+    if ! sudo apt update; then
+        log_error "apt update failed – skipping upgrade and cleanup"
+        return 1
+    fi
+
+    log_info "Upgradable packages:"
+    apt list --upgradable 2>/dev/null | tail -n +2
+
+    # full-upgrade (= dist-upgrade) may install/remove packages to resolve
+    # dependency changes, which is what a rolling kernel/library bump needs
+    log_info "Performing full system upgrade..."
+    if ! sudo apt full-upgrade; then
+        log_error "apt full-upgrade failed – skipping autoremove and cache cleanup"
+        return 1
+    fi
+
+    log_info "Checking for packages that are no longer required..."
+    # apt shows the removal list and asks for confirmation itself
+    sudo apt autoremove --purge || log_error "Autoremove failed or was declined"
+
+    # Packages removed with plain `remove` leave config files behind (dpkg state "rc")
+    local -a residual=()
+    mapfile -t residual < <(dpkg -l 2>/dev/null | awk '/^rc/ {print $2}')
+    if (( ${#residual[@]} > 0 )); then
+        log_info "Packages with leftover config files: ${residual[*]}"
+        if ask_yes_no "Purge leftover config files of removed packages?" "N"; then
+            sudo apt purge "${residual[@]}" || log_error "Purge failed or was declined"
+        fi
+    else
+        log_info "No leftover package configs found"
+    fi
+
+    if ask_yes_no "Clean apt cache?" "Y"; then
+        log_info "Cleaning apt cache..."
+        sudo apt clean || true
+        sudo apt autoclean || true
+    fi
+    return 0
 }
 
 #============================================================
@@ -508,8 +627,11 @@ update_flatpak() {
 
     # Check flatpak checksums and remove .removed flatpaks
     if ask_yes_no "Verify flatpak checksums and remove .removed data?" "N"; then
-        log_info "Repairing flatpak installation (checking checksums)..."
-        sudo flatpak repair || true
+        # `sudo flatpak repair` alone only touches the SYSTEM installation
+        log_info "Repairing flatpak user installation..."
+        flatpak repair --user || true
+        log_info "Repairing flatpak system installation..."
+        sudo flatpak repair --system || true
         log_info "Flatpak repair complete"
     fi
 }
@@ -521,17 +643,19 @@ update_flatpak() {
 update_shell() {
     log_header "Update zsh shell"
 
-    if ! ask_yes_no "Update Zinit" "N"; then
-        log_info "Zinit update skipped."
-        return 0
+    if ask_yes_no "Update Zinit itself?" "N"; then
+        zsh -ic "zinit self-update" || true
+    else
+        log_info "Zinit self-update skipped."
     fi
-    zsh -ic "zinit self-update" || true
 
-    if ask_yes_no "Update zinit plugins" "Y"; then
+    # Independent of the self-update prompt above
+    if ask_yes_no "Update zinit plugins?" "Y"; then
         zsh -ic "zinit update --all" || true
+        zsh -ic "zinit zstatus" || true
+    else
+        log_info "Zinit plugin update skipped."
     fi
-
-    zsh -ic "zinit zstatus" || true
 }
 
 #============================================================
@@ -547,7 +671,11 @@ update_yazi() {
     fi
     zsh -ic "ya pkg upgrade" || true
 
-    zsh -ic "yazi --debug" || true
+    # NOTE: `yazi -- --debug` treats "--debug" as a path and opens the TUI,
+    # blocking the script. The flag must come before any `--`.
+    if ask_yes_no "Print yazi debug info?" "N"; then
+        zsh -ic "yazi --debug" || true
+    fi
 }
 
 #============================================================
@@ -557,10 +685,10 @@ update_yazi() {
 logs_journalctl() {
     log_header "Cleaning logs"
 
-    # Get log space before
-    local log_space_before
-    log_space_before=$(df --output=used -B1 / | tail -1) || log_space_before="0"
-    log_info "Log space before cleanup: ${log_space_before}"
+    # Note: this measures used space on / as a whole, not just logs
+    local used_before used_after delta
+    used_before=$(df --output=used -B1 / | tail -1 | tr -d ' ') || used_before=0
+    log_info "Disk used before cleanup: $((used_before / 1024 / 1024)) MB"
 
     if ask_yes_no "Vacuum journalctl down?" "N"; then
         log_info "Shrinking journalctl total size, and rotating logs"
@@ -573,26 +701,23 @@ logs_journalctl() {
         if command -v logrotate &>/dev/null; then
             log_info "Forcing logrotate"
             sudo logrotate -f /etc/logrotate.conf 2>/dev/null || true
-            log_info "Removing rotated log files"
         fi
     else
         log_info "Skipping journalctl vacuum"
     fi
 
     if ask_yes_no "Shorten ACTIVE log files? (Highly invasive)" "N"; then
-        log_info "Stopping rsyslog and journald"
-        sudo systemctl stop rsyslog 2>/dev/null || true
-        sudo systemctl stop systemd-journald 2>/dev/null || true
-
-        log_info "Emptying current log files"
-        sudo find /var/log -maxdepth 2 -type f -name "*.log" -exec truncate -s 0 {} + 2>/dev/null || true
-
-        log_info "Restarting services"
-        sudo systemctl start rsyslog 2>/dev/null || true
-        sudo systemctl start systemd-journald 2>/dev/null || true
+        # pacman.log, dpkg.log and apt's history.log are kept: they are your
+        # upgrade history. journald is not stopped: its sockets would just restart it.
+        log_info "Emptying current log files (pacman/dpkg/apt history preserved)"
+        sudo find /var/log -maxdepth 2 -type f -name "*.log" \
+            ! -name "pacman.log" ! -name "dpkg.log" ! -name "history.log" \
+            -exec truncate -s 0 {} + 2>/dev/null || true
 
         log_info "Removing rotated log files"
-        sudo find /var/log -type f -name "*.log.*" -delete 2>/dev/null || true
+        sudo find /var/log -type f -name "*.log.*" \
+            ! -name "pacman.log*" ! -name "dpkg.log*" ! -name "history.log*" \
+            -delete 2>/dev/null || true
     else
         log_info "Skipping removal of current log files"
     fi
@@ -600,74 +725,98 @@ logs_journalctl() {
     if ask_yes_no "Clear coredumps?" "N"; then
         log_info "Cleaning coredump files..."
 
-        # Detect init system
-        local init_system="unknown"
-        if command -v systemctl &>/dev/null; then
-            init_system="systemd"
-        elif command -v sv &>/dev/null; then
-            init_system="runit"
-        fi
-
-        # Stop coredump service if systemd
-        if [[ "$init_system" == "systemd" ]]; then
-            if sudo systemctl list-units --type=service 2>/dev/null | grep -q systemd-coredump; then
-                sudo systemctl stop systemd-coredump.service 2>/dev/null || true
-            fi
-        fi
-
-        # Clean directories
+        # /tmp and /var/tmp deliberately NOT included: wiping /tmp under a
+        # running session removes live sockets (X11, tmux, ...).
         local dirs_to_clean=(
             "/var/lib/systemd/coredump"
             "/var/crash"
             "/var/dumps"
-            "/var/tmp"
-            "/tmp"
         )
 
+        local dir_path
         for dir_path in "${dirs_to_clean[@]}"; do
             if [[ -d "$dir_path" ]]; then
-                log_info "Cleaning ${dir_path}..."
                 log_info "Contents of ${dir_path}:"
                 sudo ls -lah "$dir_path" 2>/dev/null || true
 
                 if ask_yes_no "Delete all contents of ${dir_path}?" "N"; then
-                    sudo find "$dir_path" -mindepth 1 -maxdepth 1 -delete 2>/dev/null || true
+                    # find -delete can't remove non-empty subdirs at maxdepth 1
+                    sudo find "$dir_path" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + 2>/dev/null || true
                     log_info "Cleaned ${dir_path}"
                 else
                     log_info "Skipped ${dir_path}"
                 fi
             fi
         done
-
-        # Restart service if systemd
-        if [[ "$init_system" == "systemd" ]]; then
-            if sudo systemctl list-units --type=service 2>/dev/null | grep -q systemd-coredump; then
-                sudo systemctl start systemd-coredump.service 2>/dev/null || true
-            fi
-        fi
-
-        log_info "Coredump cleanup complete (init system: ${init_system})"
+        log_info "Coredump cleanup complete"
     else
         log_info "Skipping coredump removal"
     fi
 
-    # Sync filesystem and wait for it to complete
     log_info "Syncing filesystem..."
     sync
     sleep 2
 
-    # Get log space after
-    local log_space_after delta before_mb after_mb delta_mb
-    log_space_after=$(df --output=used -B1 / | tail -1) || log_space_after="0"
-    delta=$((log_space_after - log_space_before))
+    used_after=$(df --output=used -B1 / | tail -1 | tr -d ' ') || used_after=0
+    delta=$((used_after - used_before))
 
-    before_mb=$((log_space_before / 1024 / 1024))
-    after_mb=$((log_space_after / 1024 / 1024))
-    delta_mb=$((delta / 1024 / 1024))
+    log_info "Disk used before: $((used_before / 1024 / 1024)) MB"
+    log_info "Disk used after : $((used_after / 1024 / 1024)) MB"
+    log_info "Change          : $((delta / 1024 / 1024)) MB"
+}
 
-    log_info "Disk used before: ${before_mb} MB"
-    log_info "Disk used after : ${after_mb} MB"
-    log_info "Change          : ${delta_mb} MB"
+#============================================================
+# POST-UPGRADE CHECKS
+#============================================================
+
+check_post_upgrade() {
+    log_header "Post-upgrade checks"
+
+    if command -v pacman &>/dev/null; then
+        # Unmerged config files (this also catches a new pacman mirrorlist.pacnew
+        # that would silently supersede your ranked mirrorlist)
+        local pacnew
+        pacnew=$(sudo find /etc \( -name '*.pacnew' -o -name '*.pacsave' \) 2>/dev/null)
+        if [[ -n "$pacnew" ]]; then
+            log_info "Unmerged config files found (merge with 'sudo pacdiff' from pacman-contrib):"
+            echo "$pacnew"
+        else
+            log_info "No .pacnew/.pacsave files found"
+        fi
+    fi
+
+    if command -v apt &>/dev/null; then
+        # Config files dpkg/ucf left for manual merging
+        local dpkgnew
+        dpkgnew=$(sudo find /etc \( -name '*.dpkg-new' -o -name '*.dpkg-dist' -o -name '*.dpkg-old' \
+            -o -name '*.ucf-new' -o -name '*.ucf-dist' -o -name '*.ucf-old' \) 2>/dev/null)
+        if [[ -n "$dpkgnew" ]]; then
+            log_info "Unmerged config files found (compare with 'diff' and merge manually):"
+            echo "$dpkgnew"
+        else
+            log_info "No .dpkg-*/.ucf-* files found"
+        fi
+
+        # Debian/Ubuntu flag a needed reboot with this file
+        if [[ -f /var/run/reboot-required ]]; then
+            log_info "Reboot required by upgraded packages:"
+            cat /var/run/reboot-required.pkgs 2>/dev/null | sort -u | sed 's/^/  /'
+        fi
+    fi
+
+    # Kernel modules for the running kernel vanish once the kernel is upgraded
+    if [[ ! -d "/usr/lib/modules/$(uname -r)" && ! -d "/lib/modules/$(uname -r)" ]]; then
+        log_info "Running kernel ($(uname -r)) no longer matches installed modules – reboot recommended"
+    fi
+
+    if command -v systemctl &>/dev/null; then
+        local failed
+        failed=$(systemctl --failed --no-legend 2>/dev/null)
+        if [[ -n "$failed" ]]; then
+            log_info "Failed systemd units:"
+            echo "$failed"
+        fi
+    fi
 }
 
 #============================================================
@@ -685,7 +834,7 @@ final() {
         log_error "reboot command not found"
     else
         if ask_yes_no "Reboot now?" "N"; then
-            log_info "Rebooting system in 10 seconds..."
+            log_info "Rebooting system in 10 seconds (Ctrl+C to abort)..."
             sleep 10
             sudo reboot
         fi
@@ -695,23 +844,44 @@ final() {
 }
 
 #============================================================
+# SUDO KEEPALIVE
+#============================================================
+
+# Long upgrades can outlive sudo's credential cache and re-prompt mid-run.
+start_sudo_keepalive() {
+    sudo -v || return 1
+    (
+        while kill -0 "$$" 2>/dev/null; do
+            sudo -n true 2>/dev/null
+            sleep 50
+        done
+    ) &
+    SUDO_KEEPALIVE_PID=$!
+}
+
+#============================================================
 # MAIN ENTRY POINT
 #============================================================
 
 main() {
     log_header "Starting Full System Upgrade"
 
-    # Validate required commands
-    for cmd in sudo curl df awk; do
+    if [[ $EUID -eq 0 ]]; then
+        log_error "Do not run as root: flatpak --user, zsh and yay need your normal user (sudo is used where needed)"
+        return 1
+    fi
+
+    for cmd in sudo df awk; do
         if ! command -v "$cmd" &>/dev/null; then
             log_error "Required command not found: $cmd"
             return 1
         fi
     done
 
+    start_sudo_keepalive || { log_error "sudo authentication failed"; return 1; }
+
     show_disk_space "Initial disk space"
 
-    # Run functions
     if command -v pacman &>/dev/null; then
         mirrorlist
     fi
@@ -721,8 +891,12 @@ main() {
     fi
 
     if command -v pacman &>/dev/null; then
-        update_pacman
-        update_aur
+        # AUR step is skipped if the repo upgrade itself failed
+        update_pacman && update_aur
+    fi
+
+    if command -v apt &>/dev/null && command -v dpkg &>/dev/null; then
+        update_apt
     fi
 
     if command -v flatpak &>/dev/null; then
@@ -733,12 +907,16 @@ main() {
         logs_journalctl
     fi
 
-    if command -v zsh&>/dev/null; then
+    if command -v zsh &>/dev/null; then
         update_shell
     fi
 
     if command -v yazi &>/dev/null; then
         update_yazi
+    fi
+
+    if command -v pacman &>/dev/null || command -v apt &>/dev/null; then
+        check_post_upgrade
     fi
 
     final

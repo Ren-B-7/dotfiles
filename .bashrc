@@ -9,4 +9,5 @@ IMPORTS="$REL_DIR/.custom"
 
 export IMPORTS
 source "$IMPORTS/start.sh"
+source "$IMPORTS/secret.sh"
 PS1='[\u@\h \W]\$ '

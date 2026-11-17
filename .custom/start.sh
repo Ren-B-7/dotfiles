@@ -5,5 +5,3 @@ source "$IMPORTS/set_ufw_permissions.sh"
 source "$IMPORTS/exports.sh"
 source "$IMPORTS/aliases_set.sh"
 source "$IMPORTS/npm.sh"
-source "$IMPORTS/secret.sh"
-
